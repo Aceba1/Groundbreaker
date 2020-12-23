@@ -39,9 +39,9 @@ class CloudPage
         float radSq = radius * radius;
 
         for (int y = minY; y <= maxY; y++)
-        {
             for (int x = minX; x <= maxX; x++)
             {
+                // Within radius check
                 float distSq = (x - relX) * (x - relX) + (y - relY) * (y - relY);
                 if (distSq >= radSq) continue;
 
@@ -50,23 +50,25 @@ class CloudPage
                 int hard = GetHard(value);
 
                 if (modifyHard != 0)
-                    hard = Mathf.Clamp(hard + modifyHard, 0, 7);
+                    hard = Mathf.Clamp(hard + modifyHard, 0, 15);
 
                 if (weight != 0)
                 {
+                    // Calculate new mass
                     totalMass -= mass;
                     float deep = radius - Mathf.Sqrt(distSq) / (1f + hard / 2f);
-                    int feather = (int)(Mathf.Clamp01(deep) * 7);
+                    int feather = (int)(Mathf.Clamp01(deep) * 15);
+
                     if (weight > 0)
                         mass = Mathf.Max(mass, feather);
                     else
                         mass = Mathf.Min(mass, 7 - feather);
+
                     totalMass += mass;
                 }
 
                 cloud[y, x] = JoinValues(mass, hard);
             }
-        }
 
         // DEBUG
         lastMinX = minX;
@@ -82,9 +84,9 @@ class CloudPage
     // Mass, mostly for interpolation
     private static int GetMass(byte value) => value & 0x0F;
     // Hardness, how indestructible it is
-    private static int GetHard(byte value) => value & 0xF0;
+    private static int GetHard(byte value) => (value & 0xF0) >> 2;
 
-    private static byte JoinValues(int mass, int hard) => (byte)((mass & 0x0F) + ((hard & 0x0F) << 1));
+    private static byte JoinValues(int mass, int hard) => (byte)((mass & 0x0F) + ((hard & 0x0F) << 2));
 
     public IEnumerable<CloudPairEnumerator> GetIterator()
     {
