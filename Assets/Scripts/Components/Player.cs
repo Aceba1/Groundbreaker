@@ -9,7 +9,7 @@ public class Player : MonoBehaviour
     Mover mover;
     InputController input;
     // Start is called before the first frame update
-    void Awake()
+    void OnEnable ()
     {
         mover = GetComponent<Mover>();
         input = GetComponent<InputController>();

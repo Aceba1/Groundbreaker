@@ -9,7 +9,7 @@ public class Mover : MonoBehaviour
     bool jump;
     bool jumping;
 
-    private void Awake()
+    private void OnEnable()
     {
         rbody = GetComponent<Rigidbody2D>();
     }

@@ -4,15 +4,17 @@ using UnityEngine;
 class DeformableCloud : Deformable
 {
     [SerializeField]
-    private byte pageDetail;
+    [Range(4, 128)]
+    private byte pageDetail = 16;
     [SerializeField]
-    private int pageSize;
+    [Range(1, 32)]
+    private int pageSize = 4;
 
     private float pointSize => pageSize / (float)pageDetail;
 
     Dictionary<Vector2Int, CloudPage> clouds;
 
-    private void Awake()
+    private void OnEnable()
     {
         clouds = new Dictionary<Vector2Int, CloudPage>();
         clouds.Add(Vector2Int.zero, new CloudPage(pageDetail));
@@ -30,12 +32,10 @@ class DeformableCloud : Deformable
         clouds[Vector2Int.zero].Modify(localPos.x / pointSize, localPos.y / pointSize, radius / pointSize, (int)strength, 1);
     }
 
-    private void OnDrawGizmos()
+    private void OnDrawGizmosSelected()
     {
         // Ignoring rotations for now
         // Debug only
-        if (clouds == null)
-            Awake();
 
         float pointSize = this.pointSize;
 
@@ -49,31 +49,32 @@ class DeformableCloud : Deformable
             Gizmos.color = Color.gray;
         }
 
-        foreach (var pair in clouds)
-        {
-            Vector3 offset = new Vector3(pair.Key.x, pair.Key.y) * pageSize;
-            CloudPage cloud = pair.Value;
-
-            Vector3 minX = new Vector3(cloud.lastMinX * pointSize, 0f),
-                maxX = new Vector3(cloud.lastMaxX * pointSize, 0f),
-                minY = new Vector3(0f, cloud.lastMinY * pointSize),
-                maxY = new Vector3(0f, cloud.lastMaxY * pointSize);
-            Gizmos.color = Color.red;
-            Gizmos.DrawLine(transform.position + minX + minY, transform.position + maxX + minY);
-            Gizmos.DrawLine(transform.position + minX + maxY, transform.position + maxX + maxY);
-            Gizmos.DrawLine(transform.position + minX + minY, transform.position + minX + maxY);
-            Gizmos.DrawLine(transform.position + maxX + minY, transform.position + maxX + maxY);
-
-            Gizmos.DrawWireSphere(transform.position + new Vector3(cloud.lastCursorPos.x, cloud.lastCursorPos.y) * pointSize, cloud.lastRadius * pointSize);
-
-            foreach (var item in cloud.GetIterator())
+        if (clouds != null)
+            foreach (var pair in clouds)
             {
-                if (item.mass == 0) continue;
-                Gizmos.color = Color.Lerp(Color.white, Color.red, item.hard / 15f);
-                Gizmos.DrawCube(transform.position + transform.rotation * (offset + new Vector3(
-                    item.X * pointSize, item.Y * pointSize, 1f)), // position
-                    Vector3.one * (pointSize * (item.mass / 15f))); // size
+                Vector3 offset = new Vector3(pair.Key.x, pair.Key.y) * pageSize;
+                CloudPage cloud = pair.Value;
+
+                Vector3 minX = new Vector3(cloud.lastMinX * pointSize, 0f),
+                    maxX = new Vector3(cloud.lastMaxX * pointSize, 0f),
+                    minY = new Vector3(0f, cloud.lastMinY * pointSize),
+                    maxY = new Vector3(0f, cloud.lastMaxY * pointSize);
+                Gizmos.color = Color.red;
+                Gizmos.DrawLine(transform.position + minX + minY, transform.position + maxX + minY);
+                Gizmos.DrawLine(transform.position + minX + maxY, transform.position + maxX + maxY);
+                Gizmos.DrawLine(transform.position + minX + minY, transform.position + minX + maxY);
+                Gizmos.DrawLine(transform.position + maxX + minY, transform.position + maxX + maxY);
+
+                Gizmos.DrawWireSphere(transform.position + new Vector3(cloud.lastCursorPos.x, cloud.lastCursorPos.y) * pointSize, cloud.lastRadius * pointSize);
+
+                foreach (var item in cloud.GetIterator())
+                {
+                    if (item.mass == 0) continue;
+                    Gizmos.color = Color.Lerp(Color.white, Color.red, item.hard / 15f);
+                    Gizmos.DrawCube(transform.position + transform.rotation * (offset + new Vector3(
+                        item.X * pointSize, item.Y * pointSize, 1f)), // position
+                        Vector3.one * (pointSize * (item.mass / 15f))); // size
+                }
             }
-        }
     }
 }

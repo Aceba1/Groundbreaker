@@ -12,7 +12,7 @@ public class DeformableSpline : Deformable
     SpriteShapeController controller;
     Spline spline;
 
-    private void Awake()
+    private void OnEnable()
     {
         collider = GetComponent<PolygonCollider2D>();
         controller = GetComponent<SpriteShapeController>();
