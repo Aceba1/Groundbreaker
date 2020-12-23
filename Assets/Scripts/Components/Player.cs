@@ -18,9 +18,13 @@ public class Player : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-
         mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        radius += Input.mouseScrollDelta.y * 0.1f;
+
+        //if (Input.GetKey(KeyCode.LeftShift))
+        // Cycle brush types
+        //else
+        radius = Mathf.Round(radius * 10f + Input.mouseScrollDelta.y) * 0.1f;
+        
         bool leftClick = Input.GetMouseButton(0);
         bool rightClick = Input.GetMouseButton(1);
         if (leftClick || rightClick)
@@ -35,13 +39,16 @@ public class Player : MonoBehaviour
         }
     }
 
+    private static readonly Vector3 INVALID_V3 = new Vector3(-1337, -1337, -1337);
+
     //DEBUG 
-    Vector3 mousePos;
+    Vector3 mousePos = INVALID_V3;
     float radius = 1;
 
     private void OnDrawGizmos()
     {
-        if (!Application.isPlaying) return;
+        if (mousePos == INVALID_V3)
+            return;
         Gizmos.color = Color.blue;
         Gizmos.DrawWireSphere(mousePos, radius);
     }
