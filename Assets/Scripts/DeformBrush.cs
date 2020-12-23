@@ -1,18 +1,29 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
-abstract class DeformBrush
+abstract class DeformBrush : MonoBehaviour
 {
-    public Effect type;
+    public readonly Shape shape;
+    public readonly Effect effect;
 
-    enum Effect : byte
+    public Vector2 worldPos;
+
+    protected DeformBrush(Shape shape, Effect effect)
+    {
+        this.shape = shape;
+        this.effect = effect;
+    }
+
+    public abstract BoundsInt GetBounds();
+
+    public enum Effect : byte
     {
         SetMass,
         ModMass,
         SetHard,
         ModHard,
     }
-    enum Shape : byte
+    public enum Shape : byte
     {
         Circle,
         Rect,
@@ -22,4 +33,15 @@ abstract class DeformBrush
     }
 }
 
-class 
+class CircleBrush : DeformBrush
+{
+    public CircleBrush(Effect effect = Effect.SetMass) : base(Shape.Circle, effect)
+    {
+
+    }
+
+    public override BoundsInt GetBounds()
+    {
+        throw new System.NotImplementedException();
+    }
+}
