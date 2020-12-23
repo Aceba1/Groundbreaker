@@ -29,6 +29,13 @@ static class MathUtil
             SquaredSigned(SideOfLine(C, D, point)) / DistanceSq(C, D),
             SquaredSigned(SideOfLine(D, A, point)) / DistanceSq(D, A));
 
+    public static float DepthInRectangle(Edge A, Edge B, Edge C, Edge D, Vector2 point) =>
+        Mathf.Min(
+            SquaredSigned(A.SideOf(point)) / A.lengthSq,
+            SquaredSigned(B.SideOf(point)) / B.lengthSq,
+            SquaredSigned(C.SideOf(point)) / C.lengthSq,
+            SquaredSigned(D.SideOf(point)) / D.lengthSq);
+
     public static float Squared(float value) => 
         value * value;
 
@@ -44,5 +51,24 @@ static class MathUtil
             if (SideOfLine(poly[i - 1], poly[i], point) <= 0) // To the left of?
                 return false;
         return true;
+    }
+
+    public struct Edge
+    {
+        public Edge(Vector2 A, Vector2 B)
+        {
+            this.A = A;
+            this.B = B;
+            lengthSq = DistanceSq(A, B);
+            length = Mathf.Sqrt(lengthSq);
+        }
+
+        public float SideOf(Vector2 point) =>
+            SideOfLine(A, B, point);
+
+        public readonly Vector2 A, B;
+
+        public readonly float lengthSq;
+        public readonly float length;
     }
 }
