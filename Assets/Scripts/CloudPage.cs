@@ -56,13 +56,13 @@ class CloudPage
                 {
                     // Calculate new mass
                     totalMass -= mass;
-                    float deep = radius - Mathf.Sqrt(distSq) / (1f + hard / 2f);
+                    float deep = radius - Mathf.Sqrt(distSq);
                     int feather = (int)(Mathf.Clamp01(deep) * 15);
 
                     if (weight > 0)
                         mass = Mathf.Max(mass, feather);
                     else
-                        mass = Mathf.Min(mass, 7 - feather);
+                        mass = Mathf.Min(mass, 15 - feather);
 
                     totalMass += mass;
                 }
@@ -86,7 +86,7 @@ class CloudPage
     // Hardness, how indestructible it is
     private static int GetHard(byte value) => (value & 0xF0) >> 2;
 
-    private static byte JoinValues(int mass, int hard) => (byte)((mass & 0x0F) + ((hard & 0x0F) << 2));
+    private static byte JoinValues(int mass, int hard) => (byte)((mass & 0x0F) | ((hard << 2) & 0xF0));
 
     public IEnumerable<CloudPairEnumerator> GetIterator()
     {
