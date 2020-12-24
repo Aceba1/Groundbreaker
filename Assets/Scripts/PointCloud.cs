@@ -1,9 +1,9 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
-class CloudPage
+class PointCloud
 {
-    byte[,] cloud;
+    internal byte[,] cloud;
 
     // DEBUG
     public int
@@ -18,13 +18,21 @@ class CloudPage
     public int totalMass { get; private set; }
     //bool filled;
 
-    public CloudPage(byte cloudSize)
+    MarchingSquares marching;
+
+    public PointCloud(byte squareCount, float pointScale)
     {
-        size = cloudSize;
+        size = squareCount;
+        marching = new MarchingSquares(this, pointScale);
     }
 
     public void AllocateCloud() =>
         cloud = new byte[size + 1, size + 1];
+
+    public Mesh MarchMesh()
+    {
+        return marching.March();
+    }
 
     public void Modify(float relX, float relY, float radius, int weight = 1, int modifyHard = 0)
     {
@@ -82,13 +90,13 @@ class CloudPage
     //? These should be inlined by compiler
 
     // Mass, mostly for interpolation
-    private static int GetMass(byte value) => value & 0x0F;
+    internal static int GetMass(byte value) => value & 0x0F;
     // Hardness, how indestructible it is
-    private static int GetHard(byte value) => (value & 0xF0) >> 2;
+    internal static int GetHard(byte value) => (value & 0xF0) >> 4;
 
-    private static byte JoinValues(int mass, int hard) => (byte)((mass & 0x0F) | ((hard << 2) & 0xF0));
+    internal static byte JoinValues(int mass, int hard) => (byte)((mass & 0x0F) | ((hard << 4) & 0xF0));
 
-    public IEnumerable<CloudPairEnumerator> GetIterator()
+    public IEnumerable<PairItem> GetIterator()
     {
         if (cloud == null)
             yield break;
@@ -99,18 +107,18 @@ class CloudPage
                 byte value = cloud[y, x];
                 int mass = GetMass(value);
                 int hard = GetHard(value);
-                yield return new CloudPairEnumerator(x, y, mass, hard);
+                yield return new PairItem(x, y, mass, hard);
             }
 
         yield break;
     }
 
-    public struct CloudPairEnumerator
+    public struct PairItem
     {
         public int mass, hard;
         public int X, Y;
 
-        public CloudPairEnumerator(int X, int Y, int mass, int hard)
+        public PairItem(int X, int Y, int mass, int hard)
         {
             this.X = X;
             this.Y = Y;
