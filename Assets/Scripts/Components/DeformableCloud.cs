@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
+[RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
 class DeformableCloud : Deformable
 {
     [SerializeField]
@@ -12,12 +13,20 @@ class DeformableCloud : Deformable
 
     private float pointSize => pageSize / (float)pageDetail;
 
-    Dictionary<Vector2Int, CloudPage> clouds;
+    MeshFilter meshFilter;
+    Dictionary<Vector2Int, PointCloud> clouds;
 
     private void OnEnable()
     {
-        clouds = new Dictionary<Vector2Int, CloudPage>();
-        clouds.Add(Vector2Int.zero, new CloudPage(pageDetail));
+        meshFilter = GetComponent<MeshFilter>();
+        clouds = new Dictionary<Vector2Int, PointCloud>();
+        clouds.Add(Vector2Int.zero, new PointCloud(pageDetail, pointSize));
+    }
+
+    private void OnDisable()
+    {
+        clouds.Clear();
+        clouds = null;
     }
 
     public void Deform(DeformBrush brush)
@@ -29,7 +38,9 @@ class DeformableCloud : Deformable
     {
         //TODO: Choose all clouds touching radius
         float pointSize = this.pointSize;
-        clouds[Vector2Int.zero].Modify(localPos.x / pointSize, localPos.y / pointSize, radius / pointSize, (int)strength, 1);
+        var cloud = clouds[Vector2Int.zero];
+        cloud.Modify(localPos.x / pointSize, localPos.y / pointSize, radius / pointSize, (int)strength, 1);
+        meshFilter.mesh = cloud.MarchMesh();
     }
 
     private void OnDrawGizmosSelected()
@@ -53,7 +64,7 @@ class DeformableCloud : Deformable
             foreach (var pair in clouds)
             {
                 Vector3 offset = new Vector3(pair.Key.x, pair.Key.y) * pageSize;
-                CloudPage cloud = pair.Value;
+                PointCloud cloud = pair.Value;
 
                 Vector3 minX = new Vector3(cloud.lastMinX * pointSize, 0f),
                     maxX = new Vector3(cloud.lastMaxX * pointSize, 0f),
