@@ -53,6 +53,10 @@ static class MathUtil
         return true;
     }
 
+    public static bool Collinear(Vector2 A, Vector2 B, Vector2 C) =>
+        (C.y - B.y) * (B.x - A.x) ==
+            (B.y - A.y) * (C.x - B.x);
+
     public struct Edge
     {
         public Edge(Vector2 A, Vector2 B)

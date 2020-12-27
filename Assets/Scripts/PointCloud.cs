@@ -38,6 +38,11 @@ class PointCloud
         return marching.March();
     }
 
+    public Mesh TraceMesh()
+    {
+        return marching.MarchTrace();
+    }
+
     public void Modify(float relX, float relY, float radius, int weight = 1, int modifyHard = 0)
     {
         if (cloud == null)

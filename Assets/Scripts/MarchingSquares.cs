@@ -288,6 +288,299 @@ class MarchingSquares
         }
     }
 
+    public Mesh MarchTrace()
+    {
+        if (pointCloud == null)
+            throw new NullReferenceException("MarchingSquares.MarchTrace() : pointCloud is undefined");
+
+        HashSet<Outline> total = new HashSet<Outline>();
+        Dictionary<int, Outline> processing = new Dictionary<int, Outline>();
+        Outline current = null;
+        
+        points.Clear();
+
+        byte[][] cloud = pointCloud.cloud;
+        int size = pointCloud.size;
+
+        //TODO: Cache right, top interpolated points for left, bottom of next
+
+        var lastStrip = cloud[0];
+        for (int y = 1; y < size; y++)
+        {
+            var nextStrip = cloud[y];
+
+            //TODO: Cache left points
+            for (int x = 0; x < size; x++)
+            {
+                int BL = PointCloud.GetMass(lastStrip[x]);
+                int BR = PointCloud.GetMass(lastStrip[x + 1]);
+                int TL = PointCloud.GetMass(nextStrip[x]);
+                int TR = PointCloud.GetMass(nextStrip[x + 1]);
+
+                switch (MapCase(BL, BR, TL, TR))
+                {
+                    // For easier visualization, imagine bending the bit line to a U shape
+                    // 0b_8-4-2-1
+                    // 8-4-\
+                    // 1-2-/
+
+                    // Empty
+                    case 0: break;
+
+                    #region Corners
+
+                    // Up Right Face: Use current, Merge with below
+                    case 0b_0001:
+
+                        if (y == 0) // On the wall?
+                        {
+                            current = new Outline();
+                            total.Add(current);
+                            current.AddFirst(new Vector3(x + 0.5f, y)); // CALCULATE
+                        }
+                        if (x == 0) // On the floor?
+                            current.AppendLast(new Vector3(x + 0.5f, y)); // CALCULATE
+                        else
+                        {
+                            current.AddLast(processing[x]);
+                            processing.Remove(x);
+                        }
+                        break;
+
+                    // Up Left Face: Use below, Add to Last, Set Current
+                    case 0b_0010:
+
+                        if (x == 0) // On the floor?
+                        {
+                            current = new Outline();
+                            total.Add(current);
+                            current.AddFirst(new Vector3(x + 0.5f, y)); // CALCULATE
+                        }
+                        else
+                            current = processing[x];
+                        current.AppendLast(new Vector3(x + 1, y + 0.5f)); // CALCULATE
+                        processing.Remove(x);
+                        break;
+
+                    // Down Left Face: Create new Outline, Open for above, Set Current
+                    case 0b_0100:
+
+                        current = new Outline();
+                        total.Add(current);
+                        current.AddFirst(new Vector3(x + 0.5f, y + 1)); // CALCULATE
+                        current.AddFirst(new Vector3(x + 1, y + 0.5f)); // CALCULATE
+                        processing[x] = current;
+                        break;
+
+                    // Down Right Face: Use current, Add to First, Open for above
+                    case 0b_1000:
+
+                        current.AppendFirst(new Vector3(x + 0.5f, y + 1));
+                        processing[x] = current;
+                        break;
+
+                    #endregion
+
+                    #region Walls
+
+                    // Up Face: Use current, Add to Last
+                    case 0b_1100:
+
+                        if (x == 0) // On the wall? 
+                        {
+                            current = new Outline();
+                            total.Add(current);
+                            current.AddFirst(new Vector3(x, y + 0.5f)); // CALCULATE 
+                        }
+                        current.AppendLast(new Vector3(x + 1, y + 0.5f)); // CALCULATE
+                        break;
+
+                    // Left Face: Use below, Join to Last, Open for above
+                    case 0b_0110:
+
+                        if (y == 0) // On the floor?
+                        {
+                            current = new Outline();
+                            total.Add(current);
+                            current.AddFirst(new Vector3(x + 0.5f, y)); // CALCULATE
+                            processing[x] = current;
+                        }
+                        else
+                            current = processing[x];
+                        current.AppendLast(new Vector3(x + 0.5f, y + 1)); // CALCULATE
+                        break;
+
+                    // Down Face: Use current, Add to First
+                    case 0b_0011:
+
+                        if (x == 0) // On the wall?
+                        {
+                            current = new Outline();
+                            total.Add(current);
+                            current.AddFirst(new Vector3(x, y + 0.5f)); // CALCULATE 
+                        }
+                        current.AppendFirst(new Vector3(x + 1, y + 0.5f)); // CALCULATE
+                        break;
+
+                    // Right Face: Use below, Add to First, Open for above
+                    case 0b_1001:
+
+                        if (y == 0) // On the floor?
+                        {
+                            current = new Outline();
+                            total.Add(current);
+                            current.AddFirst(new Vector3(x + 0.5f, y)); // CALCULATE
+                            processing[x] = current;
+                        }
+                        else
+                            current = processing[x];
+                        current.AppendFirst(new Vector3(x + 0.5f, y + 1));
+                        break;
+
+                    #endregion
+
+                    #region Valleys 
+
+                    // Up Left Face: Use current, Add to Last, Open for above
+                    case 0b_0111:
+
+                        current.AppendLast(new Vector3(x + 0.5f, y + 1)); // CALCULATE
+                        processing[x] = current;
+                        break;
+
+                    // Up Right Face: Create new Outline, Open for above, Set Current
+                    case 0b_1011:
+
+                        current = new Outline();
+                        total.Add(current);
+                        current.AddFirst(new Vector3(x + 0.5f, y + 1)); // CALCULATE
+                        current.AddLast(new Vector3(x + 1, y + 0.5f)); // CALCULATE
+                        processing[x] = current;
+                        break;
+
+                    // Down Right Face: Use below, Add to First, Set Current
+                    case 0b_1101:
+
+                        current = processing[x];
+                        current.AppendLast(new Vector3(x + 1, y + 0.5f)); // CALCULATE
+                        processing.Remove(x);
+                        break;
+
+                    // Down Left Face: Use current, Merge with below
+                    case 0b_1110:
+
+                        current.AddFirst(processing[x]);
+                        processing.Remove(x);
+                        break;
+
+                    #endregion
+
+                    #region Saddles
+
+                    // Down Left, Top Right
+                    case 0b_0101:
+                        if (BL + BR + TL + TR > 30)
+                        {
+
+                        }
+                        else
+                        {
+
+                        }
+
+                        break;
+
+                    // Down Right, Top Left
+                    case 0b_1010:
+                        if (BL + BR + TL + TR > 30)
+                        {
+
+                        }
+                        else
+                        {
+
+                        }
+
+                        break;
+
+                    #endregion
+
+                    // Full
+                    case 0b_1111:
+                        // Should check if at corners of grid
+                        break;
+                }
+
+                // -- FILLED SPACE --
+
+                //if (x == 0)
+                //{
+                //    if (y == 0)
+                //    {
+                //        current = new Outline();
+                //        current.AddLast(Vector3.zero); // It is what it is
+                //    }
+                //}
+
+                //GenerateMesh(BL, BR, TL, TR, x, y);
+            }
+            lastStrip = nextStrip;
+        }
+
+        Mesh mesh = new Mesh();
+
+        mesh.subMeshCount = total.Count;
+        List<Vector3> vertices = new List<Vector3>();
+
+        foreach (var shape in total)
+        {
+            mesh.SetSubMesh(0, 
+                new UnityEngine.Rendering.SubMeshDescriptor(vertices.Count, shape.Count, MeshTopology.LineStrip));
+            vertices.AddRange(shape);
+        }
+        mesh.SetVertices(vertices);
+
+        return mesh;
+    }
+    
+
+    class Outline : LinkedList<Vector3>
+    {
+        public void AppendLast(Vector3 point)
+        {
+            if (Count >= 2 && MathUtil.Collinear(Last.Previous.Value, Last.Value, point))
+                RemoveLast();
+            AddLast(point);
+        }
+
+        public void AppendFirst(Vector3 point)
+        {
+            if (Count >= 2 && MathUtil.Collinear(First.Next.Value, First.Value, point))
+                RemoveFirst();
+            AddFirst(point);
+        }
+
+        public void AddLast(Outline points)
+        {
+            //TODO: Use Append at beginning?
+            var last = points.First;
+            for (int i = 0; i < points.Count; i++)
+            {
+                AddLast(last.Value);
+                last = last.Next;
+            }
+        }
+
+        public void AddFirst(Outline points)
+        {
+            var last = points.Last;
+            for (int i = 0; i < points.Count; i++) {
+                AddFirst(last.Value);
+                last = last.Previous;
+            }
+        }
+    }
+
     //struct Square
     //{
 
