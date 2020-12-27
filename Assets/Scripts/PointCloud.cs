@@ -3,7 +3,7 @@ using UnityEngine;
 
 class PointCloud
 {
-    internal byte[,] cloud;
+    internal byte[][] cloud;
 
     // DEBUG
     public int
@@ -26,8 +26,12 @@ class PointCloud
         marching = new MarchingSquares(this, pointScale);
     }
 
-    public void AllocateCloud() =>
-        cloud = new byte[size + 1, size + 1];
+    public void AllocateCloud()
+    {
+        cloud = new byte[size + 1][]; //
+        for (int i = 0; i <= size; i++)
+            cloud[i] = new byte[size + 1];
+    }
 
     public Mesh MarchMesh()
     {
@@ -47,13 +51,15 @@ class PointCloud
         float radSq = radius * radius;
 
         for (int y = minY; y <= maxY; y++)
+        {
+            var strip = cloud[y];
             for (int x = minX; x <= maxX; x++)
             {
                 // Within radius check
                 float distSq = (x - relX) * (x - relX) + (y - relY) * (y - relY);
                 if (distSq >= radSq) continue;
 
-                byte value = cloud[y, x];
+                byte value = strip[x];
                 int mass = GetMass(value);
                 int hard = GetHard(value);
 
@@ -75,8 +81,9 @@ class PointCloud
                     totalMass += mass;
                 }
 
-                cloud[y, x] = JoinValues(mass, hard);
+                strip[x] = JoinValues(mass, hard);
             }
+        }
 
         // DEBUG
         lastMinX = minX;
@@ -102,13 +109,16 @@ class PointCloud
             yield break;
 
         for (int y = 0; y <= size; y++)
+        {
+            var strip = cloud[y];
             for (int x = 0; x <= size; x++)
             {
-                byte value = cloud[y, x];
+                byte value = strip[x];
                 int mass = GetMass(value);
                 int hard = GetHard(value);
                 yield return new PairItem(x, y, mass, hard);
             }
+        }
 
         yield break;
     }

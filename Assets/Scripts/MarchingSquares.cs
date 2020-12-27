@@ -89,23 +89,27 @@ class MarchingSquares
         points.Clear();
         triangles.Clear();
 
-        byte[,] cloud = pointCloud.cloud;
+        byte[][] cloud = pointCloud.cloud;
         int size = pointCloud.size;
 
         //TODO: Cache right, top interpolated points for left, bottom of next
 
-        for (int y = 0; y < size; y++)
+        var lastStrip = cloud[0];
+        for (int y = 1; y < size; y++)
         {
+            var nextStrip = cloud[y];
+
             //TODO: Cache left points
             for (int x = 0; x < size; x++)
             {
                 //TODO: Swap dual-index array for multi-array? Will permit row point cache
-                int BL = PointCloud.GetMass(cloud[y, x]);
-                int BR = PointCloud.GetMass(cloud[y, x + 1]);
-                int TL = PointCloud.GetMass(cloud[y + 1, x]);
-                int TR = PointCloud.GetMass(cloud[y + 1, x + 1]);
+                int BL = PointCloud.GetMass(lastStrip[x]);
+                int BR = PointCloud.GetMass(lastStrip[x + 1]);
+                int TL = PointCloud.GetMass(nextStrip[x]);
+                int TR = PointCloud.GetMass(nextStrip[x + 1]);
                 GenerateMesh(BL, BR, TL, TR, x, y);
             }
+            lastStrip = nextStrip;
         }
         Mesh mesh = new Mesh();
         mesh.SetVertices(points);
