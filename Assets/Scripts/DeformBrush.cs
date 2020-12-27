@@ -1,46 +1,54 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
-abstract class DeformBrush : MonoBehaviour
+abstract class DeformBrush
 {
     public readonly Shape shape;
-    public readonly Effect effect;
+    public readonly Effect massEffect;
 
     public Vector2 worldPos;
 
-    protected DeformBrush(Shape shape, Effect effect)
+    protected DeformBrush(Shape shape, Effect massEffect, Effect hardEffect)
     {
         this.shape = shape;
-        this.effect = effect;
+        this.massEffect = massEffect;
+        this.hardEffect = hardEffect;
     }
 
     public abstract BoundsInt GetBounds();
 
     public enum Effect : byte
     {
-        SetMass,
-        ModMass,
-        SetHard,
-        ModHard,
+        None,
+        Set,
+        Mod,
+        SetIfEmpty,
+        ModIfEmpty
     }
     public enum Shape : byte
     {
         Circle,
+        Square,
         Rect,
-        Tri,
         Quad,
-        Poly
+        Tri,
+        Convex
     }
 }
 
-class CircleBrush : DeformBrush
+class CircleBrush : DeformBrush, IPointCloudBrush
 {
-    public CircleBrush(Effect effect = Effect.SetMass) : base(Shape.Circle, effect)
+    public CircleBrush(Effect massEffect = Effect.Set, Effect hardEffect = Effect.None) : base(Shape.Circle, massEffect, hardEffect)
     {
 
     }
 
     public override BoundsInt GetBounds()
+    {
+        throw new System.NotImplementedException();
+    }
+
+    public void Modify(byte[,] cloud, int squareCount, Vector2 offset, float pointSize)
     {
         throw new System.NotImplementedException();
     }
