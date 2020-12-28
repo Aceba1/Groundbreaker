@@ -43,16 +43,19 @@ class DeformableCloud : Deformable
 
     private void OnDrawGizmos()
     {
+        float pointSize = this.pointSize;
+
         if (trace != null && trace.Length != 0)
         {
             for (int i = 0; i < trace.Length; i++)
             {
                 Gizmos.color = Random.ColorHSV(0, 1, 1, 1, 1, 1, 1, 1);
                 var shape = trace[i];
-                Vector2 last = transform.TransformPoint(shape[shape.Length - 1] * pageSize);
+                Vector2 last = transform.TransformPoint(shape[shape.Length - 1] * pointSize);
                 for (int j = 0; j < shape.Length; j++)
                 {
-                    Vector2 next = transform.TransformPoint(shape[j] * pageSize);
+                    Vector2 next = transform.TransformPoint(shape[j] * pointSize);
+                    Gizmos.DrawSphere(next, 0.1f);
                     Gizmos.DrawLine(last, next);
                     last = next;
                 }
