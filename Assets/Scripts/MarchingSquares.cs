@@ -140,29 +140,30 @@ class MarchingSquares
     {
         switch (MapCase(BL, BR, TL, TR))
         {
+            default:
             case 0: 
                 return;
 
             #region Corners
-            case 0b_0001: // TopRight
+            case 0b_0001: // TopRight Face
                 MakeTriangle(
                     new Vector2(x, y),
                     new Vector2(x, y + Intp(BL, TL)),
                     new Vector2(x + Intp(BL, BR), y)
                     ); return;
-            case 0b_0010: // TopLeft
+            case 0b_0010: // TopLeft Face
                 MakeTriangle(
                     new Vector2(x + 1, y),
                     new Vector2(x + Intn(BL, BR), y),
                     new Vector2(x + 1, y + Intp(BR, TR))
                     ); return;
-            case 0b_0100: // BottomLeft
+            case 0b_0100: // BottomLeft Face
                 MakeTriangle(
                     new Vector2(x + 1, y + 1),
                     new Vector2(x + 1, y + Intn(BR, TR)),
                     new Vector2(x + Intn(TL, TR), y + 1)
                     ); return;
-            case 0b_1000: //BottomRight
+            case 0b_1000: //BottomRight Face
                 MakeTriangle(
                     new Vector2(x, y + 1),
                     new Vector2(x + Intp(TL, TR), y + 1),
@@ -171,28 +172,28 @@ class MarchingSquares
             #endregion
 
             #region Walls
-            case 0b_0011: // Top
+            case 0b_0011: // Top Face
                 MakeQuad(
                     new Vector2(x, y),
                     new Vector2(x, y + Intp(BL, TL)),
                     new Vector2(x + 1, y + Intp(BR, TR)),
                     new Vector2(x + 1, y)
                     ); return;
-            case 0b_0110: // Left
+            case 0b_0110: // Left Face
                 MakeQuad(
                     new Vector2(x + 1, y),
                     new Vector2(x + Intn(BL, BR), y),
                     new Vector2(x + Intn(TL, TR), y + 1),
                     new Vector2(x + 1, y + 1)
                     ); return;
-            case 0b_1100: // Bottom
+            case 0b_1100: // Bottom Face
                 MakeQuad(
                     new Vector2(x + 1, y + 1),
                     new Vector2(x + 1, y + Intn(BR, TR)),
                     new Vector2(x, y + Intn(BL, TL)),
                     new Vector2(x, y + 1)
                     ); return;
-            case 0b_1001: // Right
+            case 0b_1001: // Right Face
                 MakeQuad(
                     new Vector2(x, y + 1),
                     new Vector2(x + Intp(TL, TR), y + 1),
@@ -202,7 +203,7 @@ class MarchingSquares
             #endregion
 
             #region Valleys
-            case 0b_0111: // TopLeft
+            case 0b_0111: // TopLeft Face
                 MakePentagon(
                     new Vector2(x + 1, y),
                     new Vector2(x, y),
@@ -210,7 +211,7 @@ class MarchingSquares
                     new Vector2(x + Intn(TL, TR), y + 1),
                     new Vector2(x + 1, y + 1)
                     ); return;
-            case 0b_1110: // BottomLeft
+            case 0b_1110: // BottomLeft Face
                 MakePentagon(
                     new Vector2(x + 1, y + 1),
                     new Vector2(x + 1, y),
@@ -218,7 +219,7 @@ class MarchingSquares
                     new Vector2(x, y + Intn(BL, TL)),
                     new Vector2(x, y + 1)
                     ); return;
-            case 0b_1101: // BottomRight
+            case 0b_1101: // BottomRight Face
                 MakePentagon(
                     new Vector2(x, y + 1),
                     new Vector2(x + 1, y + 1),
@@ -226,7 +227,7 @@ class MarchingSquares
                     new Vector2(x + Intp(BL, BR), y),
                     new Vector2(x, y)
                     ); return;
-            case 0b_1011: // TopRight
+            case 0b_1011: // TopRight Face
                 MakePentagon(
                     new Vector2(x, y),
                     new Vector2(x, y + 1),
@@ -238,27 +239,27 @@ class MarchingSquares
 
             #region Saddles
 
-            case 0b_0101:
+            case 0b_0101: // BottomLeft to TopRight
                 if (BL + BR + TL + TR > 30)
                 {
                     MakeHexagon(
                         new Vector2(x, y),
-                        new Vector2(x, y + 0.5f),
-                        new Vector2(x + 0.5f, y + 1),
+                        new Vector2(x, y + Intp(BL,TL)),
+                        new Vector2(x + Intn(TL,TR), y + 1),
                         new Vector2(x + 1, y + 1),
-                        new Vector2(x + 1, y + 0.5f),
-                        new Vector2(x + 0.5f, y)); 
+                        new Vector2(x + 1, y + Intn(BR,TR)),
+                        new Vector2(x + Intp(BL,BR), y)); 
                     return;
                 }
-                MakeTriangle( // case 0b_0001
+                MakeTriangle( // TopRight Face
                     new Vector2(x, y),
-                    new Vector2(x, y + 0.5f/*Mathf.Lerp(y, y + 1, (BL - TL) / 15f)*/),
-                    new Vector2(x + 0.5f/*Mathf.Lerp(x, x + 1, (BR - BL) / 15f)*/, y)
+                    new Vector2(x, y + Intp(BL,TL)),
+                    new Vector2(x + Intp(BL,BR), y)
                     );
-                MakeTriangle( // case 0b_0100
+                MakeTriangle( // BottomLeft Face
                     new Vector2(x + 1, y + 1),
-                    new Vector2(x + 1, y + 0.5f),
-                    new Vector2(x + 0.5f, y + 1)
+                    new Vector2(x + 1, y + Intn(BL,TL)),
+                    new Vector2(x + Intn(TL,TR), y + 1)
                     ); 
                 return;
 
@@ -267,22 +268,22 @@ class MarchingSquares
                 {
                     MakeHexagon(
                         new Vector2(x + 1, y),
-                        new Vector2(x + 0.5f, y),
-                        new Vector2(x, y + 0.5f),
+                        new Vector2(x + Intn(BL,BR), y),
+                        new Vector2(x, y + Intp(BL,TL)),
                         new Vector2(x, y + 1),
-                        new Vector2(x + 0.5f, y + 1),
-                        new Vector2(x + 1, y + 0.5f));
+                        new Vector2(x + Intp(TL,TR), y + 1),
+                        new Vector2(x + 1, y + Intn(BR,TR)));
                     return;
                 }
-                MakeTriangle( // case 0b_0010
+                MakeTriangle( // TopLeft Face
                     new Vector2(x + 1, y),
-                    new Vector2(x + 0.5f, y),
-                    new Vector2(x + 1, y + 0.5f)
+                    new Vector2(x + Intn(BL, BR), y),
+                    new Vector2(x + 1, y + Intp(BR, TR))
                     );
-                MakeTriangle( // case 0b_1000
+                MakeTriangle( // BottomRight Face
                     new Vector2(x, y + 1),
-                    new Vector2(x + 0.5f, y + 1),
-                    new Vector2(x, y + 0.5f)
+                    new Vector2(x + Intp(TL, TR), y + 1),
+                    new Vector2(x, y + Intn(BL, TL))
                     );
                 return;
 
@@ -295,7 +296,6 @@ class MarchingSquares
                     new Vector2(x + 1, y + 1),
                     new Vector2(x + 1, y)
                     ); return;
-            default: return;
         }
     }
 
