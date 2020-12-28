@@ -100,9 +100,9 @@ class MarchingSquares
         //TODO: Cache right, top interpolated points for left, bottom of next
 
         var lastStrip = cloud[0];
-        for (int y = 1; y < size; y++)
+        for (int y = 0; y < size; y++)
         {
-            var nextStrip = cloud[y];
+            var nextStrip = cloud[y + 1];
 
             //TODO: Cache left points
             
@@ -269,10 +269,10 @@ class MarchingSquares
                     MakeHexagon(
                         new Vector2(x + 1, y),
                         new Vector2(x + Intn(BL,BR), y),
-                        new Vector2(x, y + Intp(BL,TL)),
+                        new Vector2(x, y + Intn(BL,TL)),
                         new Vector2(x, y + 1),
                         new Vector2(x + Intp(TL,TR), y + 1),
-                        new Vector2(x + 1, y + Intn(BR,TR)));
+                        new Vector2(x + 1, y + Intp(BR,TR)));
                     return;
                 }
                 MakeTriangle( // TopLeft Face
