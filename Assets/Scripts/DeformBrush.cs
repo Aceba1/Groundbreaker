@@ -77,6 +77,8 @@ class CircleBrush : DeformBrush
 
                 //if (modifyHard != 0)
                 //    hard = Mathf.Clamp(hard + modifyHard, 0, 15);
+
+                deltaMass -= mass; // Calculate new mass
                 switch (massEffect)
                 {
                     default:
@@ -85,7 +87,7 @@ class CircleBrush : DeformBrush
 
                     case Effect.Set:
                         {
-                            int feather = RadProximity(radius, distSq);
+                            int feather = RadProximity(radius, Mathf.Sqrt(distSq));
                             mass = massStrength > 0 ?
                                 Mathf.Max(mass, feather) :
                                 Mathf.Min(mass, 15 - feather);
@@ -98,7 +100,7 @@ class CircleBrush : DeformBrush
                     case Effect.SetIfNotEmpty:
                         if (mass > MarchingSquares.THRESHOLD)
                         {
-                            int feather = RadProximity(radius, distSq);
+                            int feather = RadProximity(radius, Mathf.Sqrt(distSq));
                             mass = massStrength > 0 ?
                                 Mathf.Max(mass, feather) :
                                 Mathf.Min(mass, 15 - feather);
@@ -108,17 +110,8 @@ class CircleBrush : DeformBrush
                     case Effect.ModIfNotEmpty:
                         break;
                 }
-                if (massStrength != 0)
-                {
-                    deltaMass -= mass; // Calculate new mass
 
-                    int feather = RadProximity(radius, distSq);
-                    mass = massStrength > 0 ? 
-                        Mathf.Max(mass, feather) :
-                        Mathf.Min(mass, 15 - feather);
-
-                    deltaMass += mass;
-                }
+                deltaMass += mass;
 
                 strip[x] = PointCloud.JoinValues(mass, hard);
             }
@@ -128,9 +121,96 @@ class CircleBrush : DeformBrush
     }
 
 
-    static int RadProximity(float radius, float distSq)
+    static int RadProximity(float radius, float dist) =>
+        (int)(Mathf.Clamp01(radius - dist) * 15);
+
+}
+
+class SquareBrush : DeformBrush
+{
+    public float worldRadius;
+
+    public SquareBrush(float radius, float mass = 1f, Effect massEffect = Effect.Set) : base(Shape.Circle, mass, massEffect)//, hardEffect)
     {
-        return (int)(Mathf.Clamp01(radius - Mathf.Sqrt(distSq)) * 15);
+        worldRadius = radius;
+    }
+
+    public override int Modify(byte[][] cloud, int size, Vector2 relativePos, float pointSize)
+    {
+        int deltaMass = 0;
+
+        float relX = relativePos.x / pointSize,
+            relY = relativePos.y / pointSize,
+            radius = worldRadius / pointSize;
+
+
+        int minX = Mathf.Max((int)(relX - radius + 0.9f), 0),
+            maxX = Mathf.Min((int)(relX + radius), size),
+            minY = Mathf.Max((int)(relY - radius + 0.9f), 0),
+            maxY = Mathf.Min((int)(relY + radius), size);
+
+        float radSq = radius * radius;
+
+        for (int y = minY; y <= maxY; y++)
+        {
+            var strip = cloud[y];
+            for (int x = minX; x <= maxX; x++)
+            {
+                byte value = strip[x];
+
+                float dist = Mathf.Max(Mathf.Abs(relX - x), Mathf.Abs(relY - y));
+
+                int mass = PointCloud.GetMass(value);
+                int hard = PointCloud.GetHard(value);
+
+                //if (modifyHard != 0)
+                //    hard = Mathf.Clamp(hard + modifyHard, 0, 15);
+                
+                deltaMass -= mass; // Calculate new mass
+                switch (massEffect)
+                {
+                    default:
+                    case Effect.None:
+                        break;
+
+                    case Effect.Set:
+                        {
+                            int feather = SquProximity(radius, dist);
+                            mass = massStrength > 0 ?
+                                Mathf.Max(mass, feather) :
+                                Mathf.Min(mass, 15 - feather);
+                        }
+                        break;
+
+                    case Effect.Mod:
+                        break;
+
+                    case Effect.SetIfNotEmpty:
+                        if (mass > MarchingSquares.THRESHOLD)
+                        {
+                            int feather = SquProximity(radius, dist);
+                            mass = massStrength > 0 ?
+                                Mathf.Max(mass, feather) :
+                                Mathf.Min(mass, 15 - feather);
+                        }
+                        break;
+
+                    case Effect.ModIfNotEmpty:
+                        break;
+                }
+                deltaMass += mass;
+
+                strip[x] = PointCloud.JoinValues(mass, hard);
+            }
+        }
+
+        return deltaMass;
+    }
+
+
+    static int SquProximity(float radius, float dist)
+    {
+        return (int)(Mathf.Clamp01(radius - dist) * 15);
     }
 
 
