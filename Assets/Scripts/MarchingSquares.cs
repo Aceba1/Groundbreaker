@@ -8,7 +8,7 @@ using UnityEngine.Rendering;
 
 class MarchingSquares
 {
-    public const int THRESHOLD = 0;
+    public const int THRESHOLD = 7;
 
     PointCloud pointCloud;
     float scale;
@@ -95,6 +95,8 @@ class MarchingSquares
         byte[][] cloud = pointCloud.cloud;
         int size = pointCloud.size;
 
+        //Dictionary<int, Vector2>
+
         //TODO: Cache right, top interpolated points for left, bottom of next
 
         var lastStrip = cloud[0];
@@ -103,9 +105,9 @@ class MarchingSquares
             var nextStrip = cloud[y];
 
             //TODO: Cache left points
+            
             for (int x = 0; x < size; x++)
             {
-                //TODO: Swap dual-index array for multi-array? Will permit row point cache
                 int BL = PointCloud.GetMass(lastStrip[x]);
                 int BR = PointCloud.GetMass(lastStrip[x + 1]);
                 int TL = PointCloud.GetMass(nextStrip[x]);
@@ -126,8 +128,13 @@ class MarchingSquares
         (TL > THRESHOLD ? 8 : 0) +
         (TR > THRESHOLD ? 4 : 0);
 
-    // 8 4
-    // 1 2
+    static float Intp(int weightA, int weightB) => 
+        Mathf.Clamp((weightA + weightB - THRESHOLD) / (30f - THRESHOLD * 2), 0, 1);
+    
+    static float Intn(int weightA, int weightB) =>
+        1f - Intp(weightA, weightB);
+
+    //void GenerateMeshOptimized
 
     void GenerateMesh(int BL, int BR, int TL, int TR, int x, int y)
     {
@@ -137,94 +144,94 @@ class MarchingSquares
                 return;
 
             #region Corners
-            case 0b_0001:
+            case 0b_0001: // TopRight
                 MakeTriangle(
                     new Vector2(x, y),
-                    new Vector2(x, y + 0.5f/*Mathf.Lerp(y, y + 1, (BL - TL) / 15f)*/),
-                    new Vector2(x + 0.5f/*Mathf.Lerp(x, x + 1, (BR - BL) / 15f)*/, y)
+                    new Vector2(x, y + Intp(BL, TL)),
+                    new Vector2(x + Intp(BL, BR), y)
                     ); return;
-            case 0b_0010:
+            case 0b_0010: // TopLeft
                 MakeTriangle(
                     new Vector2(x + 1, y),
-                    new Vector2(x + 0.5f, y),
-                    new Vector2(x + 1, y + 0.5f)
+                    new Vector2(x + Intn(BL, BR), y),
+                    new Vector2(x + 1, y + Intp(BR, TR))
                     ); return;
-            case 0b_0100:
+            case 0b_0100: // BottomLeft
                 MakeTriangle(
                     new Vector2(x + 1, y + 1),
-                    new Vector2(x + 1, y + 0.5f),
-                    new Vector2(x + 0.5f, y + 1)
+                    new Vector2(x + 1, y + Intn(BR, TR)),
+                    new Vector2(x + Intn(TL, TR), y + 1)
                     ); return;
-            case 0b_1000:
+            case 0b_1000: //BottomRight
                 MakeTriangle(
                     new Vector2(x, y + 1),
-                    new Vector2(x + 0.5f, y + 1),
-                    new Vector2(x, y + 0.5f)
+                    new Vector2(x + Intp(TL, TR), y + 1),
+                    new Vector2(x, y + Intn(BL, TL))
                     ); return;
             #endregion
 
             #region Walls
-            case 0b_0011:
+            case 0b_0011: // Top
                 MakeQuad(
                     new Vector2(x, y),
-                    new Vector2(x, y + 0.5f),
-                    new Vector2(x + 1, y + 0.5f),
+                    new Vector2(x, y + Intp(BL, TL)),
+                    new Vector2(x + 1, y + Intp(BR, TR)),
                     new Vector2(x + 1, y)
                     ); return;
-            case 0b_0110:
+            case 0b_0110: // Left
                 MakeQuad(
                     new Vector2(x + 1, y),
-                    new Vector2(x + 0.5f, y),
-                    new Vector2(x + 0.5f, y + 1),
+                    new Vector2(x + Intn(BL, BR), y),
+                    new Vector2(x + Intn(TL, TR), y + 1),
                     new Vector2(x + 1, y + 1)
                     ); return;
-            case 0b_1100:
+            case 0b_1100: // Bottom
                 MakeQuad(
                     new Vector2(x + 1, y + 1),
-                    new Vector2(x + 1, y + 0.5f),
-                    new Vector2(x, y + 0.5f),
+                    new Vector2(x + 1, y + Intn(BR, TR)),
+                    new Vector2(x, y + Intn(BL, TL)),
                     new Vector2(x, y + 1)
                     ); return;
-            case 0b_1001:
+            case 0b_1001: // Right
                 MakeQuad(
                     new Vector2(x, y + 1),
-                    new Vector2(x + 0.5f, y + 1),
-                    new Vector2(x + 0.5f, y),
+                    new Vector2(x + Intp(TL, TR), y + 1),
+                    new Vector2(x + Intp(BL, BR), y),
                     new Vector2(x, y)
                     ); return;
             #endregion
 
             #region Valleys
-            case 0b_0111:
+            case 0b_0111: // TopLeft
                 MakePentagon(
                     new Vector2(x + 1, y),
                     new Vector2(x, y),
-                    new Vector2(x, y + 0.5f),
-                    new Vector2(x + 0.5f, y + 1),
+                    new Vector2(x, y + Intp(BL, TL)),
+                    new Vector2(x + Intn(TL, TR), y + 1),
                     new Vector2(x + 1, y + 1)
                     ); return;
-            case 0b_1110:
+            case 0b_1110: // BottomLeft
                 MakePentagon(
                     new Vector2(x + 1, y + 1),
                     new Vector2(x + 1, y),
-                    new Vector2(x + 0.5f, y),
-                    new Vector2(x, y + 0.5f),
+                    new Vector2(x + Intn(BL, BR), y),
+                    new Vector2(x, y + Intn(BL, TL)),
                     new Vector2(x, y + 1)
                     ); return;
-            case 0b_1101:
+            case 0b_1101: // BottomRight
                 MakePentagon(
                     new Vector2(x, y + 1),
                     new Vector2(x + 1, y + 1),
-                    new Vector2(x + 1, y + 0.5f),
-                    new Vector2(x + 0.5f, y + 0),
+                    new Vector2(x + 1, y + Intn(BR, TR)),
+                    new Vector2(x + Intp(BL, BR), y),
                     new Vector2(x, y)
                     ); return;
-            case 0b_1011:
+            case 0b_1011: // TopRight
                 MakePentagon(
                     new Vector2(x, y),
                     new Vector2(x, y + 1),
-                    new Vector2(x + 0.5f, y + 1),
-                    new Vector2(x + 1, y + 0.5f),
+                    new Vector2(x + Intp(TL, TR), y + 1),
+                    new Vector2(x + 1, y + Intp(BR, TR)),
                     new Vector2(x + 1, y)
                     ); return;
             #endregion
@@ -291,6 +298,8 @@ class MarchingSquares
             default: return;
         }
     }
+
+    #region Tracer
 
     public Vector2[][] MarchTrace()
     {
@@ -374,7 +383,7 @@ class MarchingSquares
                         current = new Outline();
                         total.Add(current);
                         current.AddFirst(new Vector2(x + 0.5f, y + 1)); // CALCULATE
-                        current.AddFirst(new Vector2(x + 1, y + 0.5f)); // CALCULATE
+                        current.AddLast(new Vector2(x + 1, y + 0.5f)); // CALCULATE
                         processing[x] = current;
                         break;
 
@@ -460,7 +469,7 @@ class MarchingSquares
                         current = new Outline();
                         total.Add(current);
                         current.AddFirst(new Vector2(x + 0.5f, y + 1)); // CALCULATE
-                        current.AddLast(new Vector2(x + 1, y + 0.5f)); // CALCULATE
+                        current.AddFirst(new Vector2(x + 1, y + 0.5f)); // CALCULATE
                         processing[x] = current;
                         break;
 
@@ -554,7 +563,6 @@ class MarchingSquares
         return output;
     }
     
-
     class Outline : LinkedList<Vector2>
     {
         public void AppendLast(Vector2 point)
@@ -595,6 +603,8 @@ class MarchingSquares
             }
         }
     }
+
+    #endregion
 
     //struct Square
     //{
