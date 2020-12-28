@@ -346,8 +346,10 @@ class MarchingSquares
                             current.AppendLast(new Vector2(x + 0.5f, y)); // CALCULATE
                         else
                         {
-                            current.AddLast(processing[x]);
+                            var merge = processing[x];
+                            current.AddLast(merge);
                             processing.Remove(x);
+                            total.Remove(merge);
                         }
                         break;
 
@@ -473,9 +475,13 @@ class MarchingSquares
                     // Down Left Face: Use current, Merge with below
                     case 0b_1110:
 
-                        current.AddFirst(processing[x]);
-                        processing.Remove(x);
-                        break;
+                        {
+                            var merge = processing[x];
+                            current.AddFirst(merge);
+                            total.Remove(merge);
+                            processing.Remove(x);
+                            break;
+                        }
 
                     #endregion
 
@@ -567,6 +573,8 @@ class MarchingSquares
 
         public void AddLast(Outline points)
         {
+            if (points == this) return;
+
             //TODO: Use Append at beginning?
             var last = points.First;
             for (int i = 0; i < points.Count; i++)
@@ -578,6 +586,8 @@ class MarchingSquares
 
         public void AddFirst(Outline points)
         {
+            if (points == this) return;
+
             var last = points.Last;
             for (int i = 0; i < points.Count; i++) {
                 AddFirst(last.Value);
