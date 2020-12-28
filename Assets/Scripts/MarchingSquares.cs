@@ -4,9 +4,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 class MarchingSquares
 {
+    public const int THRESHOLD = 0;
+
     PointCloud pointCloud;
     float scale;
     readonly List<Vector3> points;
@@ -117,10 +120,11 @@ class MarchingSquares
         return mesh;
     }
 
-    static int MapCase(int BL, int BR, int TL, int TR)
-    {
-        return (BL > 7 ? 1 : 0) + (BR > 7 ? 2 : 0) + (TL > 7 ? 8 : 0) + (TR > 7 ? 4 : 0);
-    }
+    static int MapCase(int BL, int BR, int TL, int TR) =>
+        (BL > THRESHOLD ? 1 : 0) +
+        (BR > THRESHOLD ? 2 : 0) +
+        (TL > THRESHOLD ? 8 : 0) +
+        (TR > THRESHOLD ? 4 : 0);
 
     // 8 4
     // 1 2
@@ -288,7 +292,7 @@ class MarchingSquares
         }
     }
 
-    public Mesh MarchTrace()
+    public Vector2[][] MarchTrace()
     {
         if (pointCloud == null)
             throw new NullReferenceException("MarchingSquares.MarchTrace() : pointCloud is undefined");
@@ -336,10 +340,10 @@ class MarchingSquares
                         {
                             current = new Outline();
                             total.Add(current);
-                            current.AddFirst(new Vector3(x + 0.5f, y)); // CALCULATE
+                            current.AddFirst(new Vector2(x + 0.5f, y)); // CALCULATE
                         }
                         if (x == 0) // On the floor?
-                            current.AppendLast(new Vector3(x + 0.5f, y)); // CALCULATE
+                            current.AppendLast(new Vector2(x + 0.5f, y)); // CALCULATE
                         else
                         {
                             current.AddLast(processing[x]);
@@ -354,11 +358,11 @@ class MarchingSquares
                         {
                             current = new Outline();
                             total.Add(current);
-                            current.AddFirst(new Vector3(x + 0.5f, y)); // CALCULATE
+                            current.AddFirst(new Vector2(x + 0.5f, y)); // CALCULATE
                         }
                         else
                             current = processing[x];
-                        current.AppendLast(new Vector3(x + 1, y + 0.5f)); // CALCULATE
+                        current.AppendLast(new Vector2(x + 1, y + 0.5f)); // CALCULATE
                         processing.Remove(x);
                         break;
 
@@ -367,15 +371,15 @@ class MarchingSquares
 
                         current = new Outline();
                         total.Add(current);
-                        current.AddFirst(new Vector3(x + 0.5f, y + 1)); // CALCULATE
-                        current.AddFirst(new Vector3(x + 1, y + 0.5f)); // CALCULATE
+                        current.AddFirst(new Vector2(x + 0.5f, y + 1)); // CALCULATE
+                        current.AddFirst(new Vector2(x + 1, y + 0.5f)); // CALCULATE
                         processing[x] = current;
                         break;
 
                     // Down Right Face: Use current, Add to First, Open for above
                     case 0b_1000:
 
-                        current.AppendFirst(new Vector3(x + 0.5f, y + 1));
+                        current.AppendFirst(new Vector2(x + 0.5f, y + 1));
                         processing[x] = current;
                         break;
 
@@ -390,9 +394,9 @@ class MarchingSquares
                         {
                             current = new Outline();
                             total.Add(current);
-                            current.AddFirst(new Vector3(x, y + 0.5f)); // CALCULATE 
+                            current.AddFirst(new Vector2(x, y + 0.5f)); // CALCULATE 
                         }
-                        current.AppendLast(new Vector3(x + 1, y + 0.5f)); // CALCULATE
+                        current.AppendLast(new Vector2(x + 1, y + 0.5f)); // CALCULATE
                         break;
 
                     // Left Face: Use below, Join to Last, Open for above
@@ -402,12 +406,12 @@ class MarchingSquares
                         {
                             current = new Outline();
                             total.Add(current);
-                            current.AddFirst(new Vector3(x + 0.5f, y)); // CALCULATE
+                            current.AddFirst(new Vector2(x + 0.5f, y)); // CALCULATE
                             processing[x] = current;
                         }
                         else
                             current = processing[x];
-                        current.AppendLast(new Vector3(x + 0.5f, y + 1)); // CALCULATE
+                        current.AppendLast(new Vector2(x + 0.5f, y + 1)); // CALCULATE
                         break;
 
                     // Down Face: Use current, Add to First
@@ -417,9 +421,9 @@ class MarchingSquares
                         {
                             current = new Outline();
                             total.Add(current);
-                            current.AddFirst(new Vector3(x, y + 0.5f)); // CALCULATE 
+                            current.AddFirst(new Vector2(x, y + 0.5f)); // CALCULATE 
                         }
-                        current.AppendFirst(new Vector3(x + 1, y + 0.5f)); // CALCULATE
+                        current.AppendFirst(new Vector2(x + 1, y + 0.5f)); // CALCULATE
                         break;
 
                     // Right Face: Use below, Add to First, Open for above
@@ -429,12 +433,12 @@ class MarchingSquares
                         {
                             current = new Outline();
                             total.Add(current);
-                            current.AddFirst(new Vector3(x + 0.5f, y)); // CALCULATE
+                            current.AddFirst(new Vector2(x + 0.5f, y)); // CALCULATE
                             processing[x] = current;
                         }
                         else
                             current = processing[x];
-                        current.AppendFirst(new Vector3(x + 0.5f, y + 1));
+                        current.AppendFirst(new Vector2(x + 0.5f, y + 1));
                         break;
 
                     #endregion
@@ -444,7 +448,7 @@ class MarchingSquares
                     // Up Left Face: Use current, Add to Last, Open for above
                     case 0b_0111:
 
-                        current.AppendLast(new Vector3(x + 0.5f, y + 1)); // CALCULATE
+                        current.AppendLast(new Vector2(x + 0.5f, y + 1)); // CALCULATE
                         processing[x] = current;
                         break;
 
@@ -453,8 +457,8 @@ class MarchingSquares
 
                         current = new Outline();
                         total.Add(current);
-                        current.AddFirst(new Vector3(x + 0.5f, y + 1)); // CALCULATE
-                        current.AddLast(new Vector3(x + 1, y + 0.5f)); // CALCULATE
+                        current.AddFirst(new Vector2(x + 0.5f, y + 1)); // CALCULATE
+                        current.AddLast(new Vector2(x + 1, y + 0.5f)); // CALCULATE
                         processing[x] = current;
                         break;
 
@@ -462,7 +466,7 @@ class MarchingSquares
                     case 0b_1101:
 
                         current = processing[x];
-                        current.AppendLast(new Vector3(x + 1, y + 0.5f)); // CALCULATE
+                        current.AppendLast(new Vector2(x + 1, y + 0.5f)); // CALCULATE
                         processing.Remove(x);
                         break;
 
@@ -518,7 +522,7 @@ class MarchingSquares
                 //    if (y == 0)
                 //    {
                 //        current = new Outline();
-                //        current.AddLast(Vector3.zero); // It is what it is
+                //        current.AddLast(Vector2.zero); // It is what it is
                 //    }
                 //}
 
@@ -527,33 +531,34 @@ class MarchingSquares
             lastStrip = nextStrip;
         }
 
-        Mesh mesh = new Mesh();
+        Vector2[][] output = new Vector2[total.Count][];
 
-        mesh.subMeshCount = total.Count;
-        List<Vector3> vertices = new List<Vector3>();
-
+        int i = 0;
         foreach (var shape in total)
-        {
-            mesh.SetSubMesh(0, 
-                new UnityEngine.Rendering.SubMeshDescriptor(vertices.Count, shape.Count, MeshTopology.LineStrip));
-            vertices.AddRange(shape);
-        }
-        mesh.SetVertices(vertices);
+            output[i++] = shape.ToArray();
 
-        return mesh;
+        
+
+        //mesh.SetVertices(vertices);
+        //mesh.SetSubMesh(0, new SubMeshDescriptor(0, vertices.Count, MeshTopology.LineStrip));
+
+        //mesh.subMeshCount = total.Count;
+        //mesh.SetSubMeshes(descriptors);
+
+        return output;
     }
     
 
-    class Outline : LinkedList<Vector3>
+    class Outline : LinkedList<Vector2>
     {
-        public void AppendLast(Vector3 point)
+        public void AppendLast(Vector2 point)
         {
             if (Count >= 2 && MathUtil.Collinear(Last.Previous.Value, Last.Value, point))
                 RemoveLast();
             AddLast(point);
         }
 
-        public void AppendFirst(Vector3 point)
+        public void AppendFirst(Vector2 point)
         {
             if (Count >= 2 && MathUtil.Collinear(First.Next.Value, First.Value, point))
                 RemoveFirst();

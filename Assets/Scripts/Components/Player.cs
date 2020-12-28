@@ -8,7 +8,9 @@ public class Player : MonoBehaviour
 {
     Mover mover;
     InputController input;
-    // Start is called before the first frame update
+
+    CircleBrush brush = new CircleBrush(1f);
+
     void OnEnable ()
     {
         mover = GetComponent<Mover>();
@@ -34,7 +36,11 @@ public class Player : MonoBehaviour
             {
                 Deformable deformable = other.GetComponent<Deformable>();
                 if (deformable != null)
-                    deformable.Deform(other.transform.InverseTransformPoint(mousePos), radius, rightClick);
+                {
+                    brush.worldRadius = radius;
+                    brush.massStrength = rightClick ? 1f : -1f;
+                    deformable.Deform(brush, mousePos);
+                }
             }
         }
     }

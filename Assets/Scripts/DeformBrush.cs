@@ -1,29 +1,30 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
-abstract class DeformBrush
+abstract class DeformBrush : IPointCloudBrush
 {
     public readonly Shape shape;
     public readonly Effect massEffect;
+    public float massStrength;
+    //public readonly Effect hardEffect;
 
-    public Vector2 worldPos;
-
-    protected DeformBrush(Shape shape, Effect massEffect, Effect hardEffect)
+    protected DeformBrush(Shape shape, float mass, Effect massEffect)//, Effect hardEffect)
     {
         this.shape = shape;
         this.massEffect = massEffect;
-        this.hardEffect = hardEffect;
+        this.massStrength = mass;
+        //this.hardEffect = hardEffect;
     }
 
-    public abstract BoundsInt GetBounds();
+    public abstract int Modify(byte[][] cloud, int squareCount, Vector2 relativePos, float pointSize);
 
     public enum Effect : byte
     {
         None,
         Set,
         Mod,
-        SetIfEmpty,
-        ModIfEmpty
+        SetIfNotEmpty,
+        ModIfNotEmpty
     }
     public enum Shape : byte
     {
@@ -36,20 +37,101 @@ abstract class DeformBrush
     }
 }
 
-class CircleBrush : DeformBrush, IPointCloudBrush
+class CircleBrush : DeformBrush
 {
-    public CircleBrush(Effect massEffect = Effect.Set, Effect hardEffect = Effect.None) : base(Shape.Circle, massEffect, hardEffect)
-    {
+    public float worldRadius;
 
+    public CircleBrush(float radius, float mass = 1f, Effect massEffect = Effect.Set /*Effect hardEffect = Effect.None*/) : base(Shape.Circle, mass, massEffect)//, hardEffect)
+    {
+        worldRadius = radius;
     }
 
-    public override BoundsInt GetBounds()
+    public override int Modify(byte[][] cloud, int size, Vector2 relativePos, float pointSize)
     {
-        throw new System.NotImplementedException();
+        int deltaMass = 0;
+
+        float relX = relativePos.x / pointSize, 
+            relY = relativePos.y / pointSize, 
+            radius = worldRadius / pointSize;
+
+
+        int minX = Mathf.Max((int)(relX - radius + 0.9f), 0),
+            maxX = Mathf.Min((int)(relX + radius), size),
+            minY = Mathf.Max((int)(relY - radius + 0.9f), 0),
+            maxY = Mathf.Min((int)(relY + radius), size);
+
+        float radSq = radius * radius;
+
+        for (int y = minY; y <= maxY; y++)
+        {
+            var strip = cloud[y];
+            for (int x = minX; x <= maxX; x++)
+            {
+                // Within radius check
+                float distSq = (x - relX) * (x - relX) + (y - relY) * (y - relY);
+                if (distSq >= radSq) continue;
+
+                byte value = strip[x];
+                int mass = PointCloud.GetMass(value);
+                int hard = PointCloud.GetHard(value);
+
+                //if (modifyHard != 0)
+                //    hard = Mathf.Clamp(hard + modifyHard, 0, 15);
+                switch (massEffect)
+                {
+                    default:
+                    case Effect.None:
+                        break;
+
+                    case Effect.Set:
+                        {
+                            int feather = RadProximity(radius, distSq);
+                            mass = massStrength > 0 ?
+                                Mathf.Max(mass, feather) :
+                                Mathf.Min(mass, 15 - feather);
+                        }
+                        break;
+
+                    case Effect.Mod:
+                        break;
+
+                    case Effect.SetIfNotEmpty:
+                        if (mass > MarchingSquares.THRESHOLD)
+                        {
+                            int feather = RadProximity(radius, distSq);
+                            mass = massStrength > 0 ?
+                                Mathf.Max(mass, feather) :
+                                Mathf.Min(mass, 15 - feather);
+                        }
+                        break;
+
+                    case Effect.ModIfNotEmpty:
+                        break;
+                }
+                if (massStrength != 0)
+                {
+                    deltaMass -= mass; // Calculate new mass
+
+                    int feather = RadProximity(radius, distSq);
+                    mass = massStrength > 0 ? 
+                        Mathf.Max(mass, feather) :
+                        Mathf.Min(mass, 15 - feather);
+
+                    deltaMass += mass;
+                }
+
+                strip[x] = PointCloud.JoinValues(mass, hard);
+            }
+        }
+
+        return deltaMass;
     }
 
-    public void Modify(byte[,] cloud, int squareCount, Vector2 offset, float pointSize)
+
+    static int RadProximity(float radius, float distSq)
     {
-        throw new System.NotImplementedException();
+        return (int)(Mathf.Clamp01(radius - Mathf.Sqrt(distSq)) * 15);
     }
+
+
 }

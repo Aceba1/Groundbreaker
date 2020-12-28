@@ -16,6 +16,9 @@ class DeformableCloud : Deformable
     MeshFilter meshFilter;
     Dictionary<Vector2Int, PointCloud> clouds;
 
+    //DEBUG:
+    Vector2[][] trace;
+
     private void OnEnable()
     {
         meshFilter = GetComponent<MeshFilter>();
@@ -29,18 +32,32 @@ class DeformableCloud : Deformable
         clouds = null;
     }
 
-    public void Deform(DeformBrush brush)
-    {
-        //brush.SetRelativity()
-    }
-
-    public override void Deform(Vector2 localPos, float radius, float strength)
+    public override void Deform(IPointCloudBrush brush, Vector2 worldPos)
     {
         //TODO: Choose all clouds touching radius
         float pointSize = this.pointSize;
         var cloud = clouds[Vector2Int.zero];
-        cloud.Modify(localPos.x / pointSize, localPos.y / pointSize, radius / pointSize, (int)strength, 1);
-        meshFilter.mesh = cloud.MarchMesh();
+        brush.Modify(cloud.cloud, pageDetail, transform.InverseTransformPoint(worldPos), pointSize);
+        trace = cloud.TraceMesh();
+    }
+
+    private void OnDrawGizmos()
+    {
+        if (trace != null && trace.Length != 0)
+        {
+            for (int i = 0; i < trace.Length; i++)
+            {
+                Gizmos.color = Random.ColorHSV(0, 1, 1, 1, 1, 1, 1, 1);
+                var shape = trace[i];
+                Vector2 last = transform.TransformPoint(shape[shape.Length - 1] * pageSize);
+                for (int j = 0; j < shape.Length; j++)
+                {
+                    Vector2 next = transform.TransformPoint(shape[j] * pageSize);
+                    Gizmos.DrawLine(last, next);
+                    last = next;
+                }
+            }
+        }
     }
 
     private void OnDrawGizmosSelected()
@@ -65,18 +82,6 @@ class DeformableCloud : Deformable
             {
                 Vector3 offset = new Vector3(pair.Key.x, pair.Key.y) * pageSize;
                 PointCloud cloud = pair.Value;
-
-                Vector3 minX = new Vector3(cloud.lastMinX * pointSize, 0f),
-                    maxX = new Vector3(cloud.lastMaxX * pointSize, 0f),
-                    minY = new Vector3(0f, cloud.lastMinY * pointSize),
-                    maxY = new Vector3(0f, cloud.lastMaxY * pointSize);
-                Gizmos.color = Color.red;
-                Gizmos.DrawLine(transform.position + minX + minY, transform.position + maxX + minY);
-                Gizmos.DrawLine(transform.position + minX + maxY, transform.position + maxX + maxY);
-                Gizmos.DrawLine(transform.position + minX + minY, transform.position + minX + maxY);
-                Gizmos.DrawLine(transform.position + maxX + minY, transform.position + maxX + maxY);
-
-                Gizmos.DrawWireSphere(transform.position + new Vector3(cloud.lastCursorPos.x, cloud.lastCursorPos.y) * pointSize, cloud.lastRadius * pointSize);
 
                 foreach (var item in cloud.GetIterator())
                 {

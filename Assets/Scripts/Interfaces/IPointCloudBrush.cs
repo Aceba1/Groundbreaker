@@ -7,7 +7,5 @@ using UnityEngine;
 
 public interface IPointCloudBrush
 {
-    void Modify(byte[][] cloud, int size, Vector2 offset, float pointSize, float rotation);
-
-    void Modify(byte[][] cloud, int squareCount, Vector2 offset, float pointSize);
+    int Modify(byte[][] cloud, int squareCount, Vector2 relativePos, float pointSize);
 }

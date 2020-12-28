@@ -5,15 +5,6 @@ class PointCloud
 {
     internal byte[][] cloud;
 
-    // DEBUG
-    public int
-        lastMinX = 0,
-        lastMaxX = 0,
-        lastMinY = 0,
-        lastMaxY = 0;
-    public Vector2 lastCursorPos;
-    public float lastRadius;
-
     public readonly byte size;
     public int totalMass { get; private set; }
     //bool filled;
@@ -24,11 +15,8 @@ class PointCloud
     {
         size = squareCount;
         marching = new MarchingSquares(this, pointScale);
-    }
 
-    public void AllocateCloud()
-    {
-        cloud = new byte[size + 1][]; //
+        cloud = new byte[size + 1][];
         for (int i = 0; i <= size; i++)
             cloud[i] = new byte[size + 1];
     }
@@ -38,65 +26,9 @@ class PointCloud
         return marching.March();
     }
 
-    public Mesh TraceMesh()
+    public Vector2[][] TraceMesh()
     {
         return marching.MarchTrace();
-    }
-
-    public void Modify(float relX, float relY, float radius, int weight = 1, int modifyHard = 0)
-    {
-        if (cloud == null)
-            AllocateCloud();
-
-        int minX = Mathf.Max((int)(relX - radius + 0.9f), 0),
-            maxX = Mathf.Min((int)(relX + radius), size),
-            minY = Mathf.Max((int)(relY - radius + 0.9f), 0),
-            maxY = Mathf.Min((int)(relY + radius), size);
-
-        float radSq = radius * radius;
-
-        for (int y = minY; y <= maxY; y++)
-        {
-            var strip = cloud[y];
-            for (int x = minX; x <= maxX; x++)
-            {
-                // Within radius check
-                float distSq = (x - relX) * (x - relX) + (y - relY) * (y - relY);
-                if (distSq >= radSq) continue;
-
-                byte value = strip[x];
-                int mass = GetMass(value);
-                int hard = GetHard(value);
-
-                if (modifyHard != 0)
-                    hard = Mathf.Clamp(hard + modifyHard, 0, 15);
-
-                if (weight != 0)
-                {
-                    // Calculate new mass
-                    totalMass -= mass;
-                    float deep = radius - Mathf.Sqrt(distSq);
-                    int feather = (int)(Mathf.Clamp01(deep) * 15);
-
-                    if (weight > 0)
-                        mass = Mathf.Max(mass, feather);
-                    else
-                        mass = Mathf.Min(mass, 15 - feather);
-
-                    totalMass += mass;
-                }
-
-                strip[x] = JoinValues(mass, hard);
-            }
-        }
-
-        // DEBUG
-        lastMinX = minX;
-        lastMaxX = maxX;
-        lastMinY = minY;
-        lastMaxY = maxY;
-        lastRadius = radius;
-        lastCursorPos = new Vector2(relX, relY);
     }
 
     //? These should be inlined by compiler
@@ -110,9 +42,6 @@ class PointCloud
 
     public IEnumerable<PairItem> GetIterator()
     {
-        if (cloud == null)
-            yield break;
-
         for (int y = 0; y <= size; y++)
         {
             var strip = cloud[y];
