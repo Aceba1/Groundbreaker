@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
-[RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
 class DeformableCloud : Deformable
 {
     [SerializeField]
@@ -13,7 +12,6 @@ class DeformableCloud : Deformable
 
     private float pointSize => pageSize / (float)pageDetail;
 
-    MeshFilter meshFilter;
     Dictionary<Vector2Int, PointCloud> clouds;
 
     //DEBUG:
@@ -21,24 +19,58 @@ class DeformableCloud : Deformable
 
     private void OnEnable()
     {
-        meshFilter = GetComponent<MeshFilter>();
         clouds = new Dictionary<Vector2Int, PointCloud>();
-        clouds.Add(Vector2Int.zero, new PointCloud(pageDetail, pointSize));
+        CreatePage(Vector2Int.zero);
+    }
+
+    private PointCloud CreatePage(Vector2Int coord)
+    {
+        var obj = new GameObject("Page " + coord);
+        obj.transform.SetParent(transform);
+        obj.transform.localPosition = new Vector3(coord.x * pageSize, coord.y * pageSize);
+        
+        var cloud = obj.AddComponent<PointCloud>();
+        cloud.Initialize(pageDetail, pointSize);
+        
+        clouds.Add(coord, cloud);
+        return cloud;
     }
 
     private void OnDisable()
     {
+        for (int i = transform.childCount - 1; i >= 0; i--)
+            Destroy(transform.GetChild(i).gameObject);
         clouds.Clear();
         clouds = null;
     }
 
     public override void Deform(IPointCloudBrush brush, Vector2 worldPos)
     {
+        Vector2 localPos = transform.InverseTransformPoint(worldPos);
         //TODO: Choose all clouds touching radius
+
+        // X1, Y1, X2, Y2;
+        Vector4 bounds = brush.GetBounds();
+
+        int minX = Mathf.FloorToInt((localPos.x + bounds.x) / pageSize),
+            maxX = Mathf.FloorToInt((localPos.x + bounds.z) / pageSize),
+            minY = Mathf.FloorToInt((localPos.y + bounds.y) / pageSize),
+            maxY = Mathf.FloorToInt((localPos.y + bounds.w) / pageSize);
+
+        Debug.Log($"{minX}, {minY}, {maxX}, {maxY}");
+
         float pointSize = this.pointSize;
-        var cloud = clouds[Vector2Int.zero];
-        brush.Modify(cloud.cloud, pageDetail, transform.InverseTransformPoint(worldPos), pointSize);
-        trace = cloud.TraceMesh();
+
+        for (int y = minY; y <= maxY; y++)
+            for (int x = minX; x <= maxX; x++)
+            {
+                Vector2Int coord = new Vector2Int(x, y);
+                if (!clouds.TryGetValue(coord, out PointCloud cloud))
+                    cloud = CreatePage(coord);
+
+                if (brush.Modify(cloud.cloud, pageDetail, localPos - (new Vector2(x, y) * pageSize), pointSize) != 0)
+                    cloud.MarchMesh();
+            }
     }
 
     private void OnDrawGizmos()

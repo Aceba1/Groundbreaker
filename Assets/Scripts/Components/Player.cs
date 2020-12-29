@@ -9,7 +9,7 @@ public class Player : MonoBehaviour
     Mover mover;
     InputController input;
 
-    CircleBrush brush = new CircleBrush(1f);
+    SquareBrush brush = new SquareBrush(1f);
 
     void OnEnable ()
     {
@@ -56,6 +56,7 @@ public class Player : MonoBehaviour
         if (mousePos == INVALID_V3)
             return;
         Gizmos.color = Color.blue;
-        Gizmos.DrawWireSphere(mousePos, radius);
+        Gizmos.DrawWireCube(mousePos, Vector3.one * (radius * 2));
+        //Gizmos.DrawWireSphere(mousePos, radius);
     }
 }

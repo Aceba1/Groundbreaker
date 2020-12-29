@@ -1,18 +1,30 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
-class PointCloud
+[RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
+class PointCloud : MonoBehaviour
 {
-    internal byte[][] cloud;
+    [SerializeField]
+    public byte[][] cloud;
 
-    public readonly byte size;
+    public byte size { get; private set; }
     public int totalMass { get; private set; }
     //bool filled;
 
+    MeshFilter meshFilter;
+
     MarchingSquares marching;
 
-    public PointCloud(byte squareCount, float pointScale)
+    public void OnEnable()
     {
+        meshFilter = GetComponent<MeshFilter>();
+    }
+
+    public void Initialize(byte squareCount, float pointScale)
+    {
+        if (marching != null)
+            Debug.LogError("PointCloud.Initialize() : Method has already been called!");
+
         size = squareCount;
         marching = new MarchingSquares(this, pointScale);
 
@@ -21,14 +33,12 @@ class PointCloud
             cloud[i] = new byte[size + 1];
     }
 
-    public Mesh MarchMesh()
+    public void MarchMesh()
     {
-        return marching.March();
-    }
-
-    public Vector2[][] TraceMesh()
-    {
-        return marching.MarchTrace();
+        if (meshFilter.mesh == null)
+            meshFilter.mesh = marching.MarchMesh();
+        else
+            marching.MarchMesh(meshFilter.mesh);
     }
 
     //? These should be inlined by compiler

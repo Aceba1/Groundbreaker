@@ -16,6 +16,7 @@ abstract class DeformBrush : IPointCloudBrush
         //this.hardEffect = hardEffect;
     }
 
+    public abstract Vector4 GetBounds();
     public abstract int Modify(byte[][] cloud, int squareCount, Vector2 relativePos, float pointSize);
 
     public enum Effect : byte
@@ -46,6 +47,9 @@ class CircleBrush : DeformBrush
         worldRadius = radius;
     }
 
+    public override Vector4 GetBounds() =>
+        new Vector4(-worldRadius, -worldRadius, worldRadius, worldRadius);
+
     public override int Modify(byte[][] cloud, int size, Vector2 relativePos, float pointSize)
     {
         int deltaMass = 0;
@@ -53,7 +57,6 @@ class CircleBrush : DeformBrush
         float relX = relativePos.x / pointSize, 
             relY = relativePos.y / pointSize, 
             radius = worldRadius / pointSize;
-
 
         int minX = Mathf.Max((int)(relX - radius + 0.9f), 0),
             maxX = Mathf.Min((int)(relX + radius), size),
@@ -123,7 +126,6 @@ class CircleBrush : DeformBrush
 
     static int RadProximity(float radius, float dist) =>
         (int)(Mathf.Clamp01(radius - dist) * 15);
-
 }
 
 class SquareBrush : DeformBrush
@@ -135,6 +137,9 @@ class SquareBrush : DeformBrush
         worldRadius = radius;
     }
 
+    public override Vector4 GetBounds() =>
+        new Vector4(-worldRadius, -worldRadius, worldRadius, worldRadius);
+
     public override int Modify(byte[][] cloud, int size, Vector2 relativePos, float pointSize)
     {
         int deltaMass = 0;
@@ -143,13 +148,10 @@ class SquareBrush : DeformBrush
             relY = relativePos.y / pointSize,
             radius = worldRadius / pointSize;
 
-
         int minX = Mathf.Max((int)(relX - radius + 0.9f), 0),
             maxX = Mathf.Min((int)(relX + radius), size),
             minY = Mathf.Max((int)(relY - radius + 0.9f), 0),
             maxY = Mathf.Min((int)(relY + radius), size);
-
-        float radSq = radius * radius;
 
         for (int y = minY; y <= maxY; y++)
         {
@@ -208,10 +210,6 @@ class SquareBrush : DeformBrush
     }
 
 
-    static int SquProximity(float radius, float dist)
-    {
-        return (int)(Mathf.Clamp01(radius - dist) * 15);
-    }
-
-
+    static int SquProximity(float radius, float dist) => 
+        (int)(Mathf.Clamp01(radius - dist) * 15);
 }

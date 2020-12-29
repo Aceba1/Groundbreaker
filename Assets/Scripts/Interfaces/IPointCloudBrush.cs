@@ -7,5 +7,9 @@ using UnityEngine;
 
 public interface IPointCloudBrush
 {
+    //TODO: Rotation?
+
+    Vector4 GetBounds();
+
     int Modify(byte[][] cloud, int squareCount, Vector2 relativePos, float pointSize);
 }

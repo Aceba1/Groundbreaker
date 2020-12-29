@@ -84,7 +84,7 @@ class MarchingSquares
         AddTriangle(c, c + 4, c + 5);
     }
 
-    public Mesh March()
+    public void March()
     {
         if (pointCloud == null)
             throw new NullReferenceException("MarchingSquares.March() : pointCloud is undefined");
@@ -95,7 +95,8 @@ class MarchingSquares
         byte[][] cloud = pointCloud.cloud;
         int size = pointCloud.size;
 
-        //Dictionary<int, Vector2>
+        // <X-Coord, Index>
+        Dictionary<int, int> vertexCellIndex = new Dictionary<int, int>();
 
         //TODO: Cache right, top interpolated points for left, bottom of next
 
@@ -105,7 +106,7 @@ class MarchingSquares
             var nextStrip = cloud[y + 1];
 
             //TODO: Cache left points
-            
+
             for (int x = 0; x < size; x++)
             {
                 int BL = PointCloud.GetMass(lastStrip[x]);
@@ -116,10 +117,33 @@ class MarchingSquares
             }
             lastStrip = nextStrip;
         }
+    }
+
+    public void UpdateMesh(Mesh mesh)
+    {
+        mesh.Clear();
+        mesh.SetVertices(points);
+        mesh.SetTriangles(triangles, 0);
+    }
+
+    public Mesh CreateMesh()
+    {
         Mesh mesh = new Mesh();
         mesh.SetVertices(points);
         mesh.SetTriangles(triangles, 0);
         return mesh;
+    }
+
+    public Mesh MarchMesh()
+    {
+        March();
+        return CreateMesh();
+    }
+
+    public void MarchMesh(Mesh meshToUpdate)
+    {
+        March();
+        UpdateMesh(meshToUpdate);
     }
 
     static int MapCase(int BL, int BR, int TL, int TR) =>
@@ -129,7 +153,7 @@ class MarchingSquares
         (TR > THRESHOLD ? 4 : 0);
 
     static float Intp(int weightA, int weightB) => 
-        Mathf.Clamp((weightA + weightB - THRESHOLD) / (30f - THRESHOLD * 2), 0, 1);
+        Mathf.Clamp((weightA + weightB - THRESHOLD) / 15f, 0, 1);
     
     static float Intn(int weightA, int weightB) =>
         1f - Intp(weightA, weightB);
