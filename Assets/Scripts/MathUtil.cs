@@ -9,8 +9,7 @@ static class MathUtil
 {
     public static float SideOfLine(float aX, float aY, float bX, float bY, float pX, float pY) =>
         (pX - aX) * (bY - aY) -
-        (pY - aY) * (bX - aX)
-        ;
+        (pY - aY) * (bX - aX);
 
     public static float SideOfLine(Vector2 A, Vector2 B, Vector2 P) =>
         (B.y - A.y) * (P.x - A.x) -
@@ -53,9 +52,12 @@ static class MathUtil
         return true;
     }
 
+    public static float Slope(Vector2 A, Vector2 B) =>
+        (B.y - A.y) / (B.x - A.x);
+
     public static bool Collinear(Vector2 A, Vector2 B, Vector2 C) =>
         (C.y - B.y) * (B.x - A.x) ==
-            (B.y - A.y) * (C.x - B.x);
+        (B.y - A.y) * (C.x - B.x);
 
     public struct Edge
     {
