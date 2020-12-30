@@ -20,17 +20,24 @@ public class Player : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-
+        
         //if (Input.GetKey(KeyCode.LeftShift))
         // Cycle brush types
         //else
         radius = Mathf.Round(radius * 10f + Input.mouseScrollDelta.y) * 0.1f;
-        
+
+
+
+        bool touched = Input.touchCount > 0;
         bool leftClick = Input.GetMouseButton(0);
         bool rightClick = Input.GetMouseButton(1);
-        if (leftClick || rightClick)
+        if (touched || leftClick || rightClick)
         {
+            if (touched)
+                mousePos = Camera.main.ScreenToWorldPoint(Input.GetTouch(0).position);
+            else
+                mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+
             Collider2D other = Physics2D.OverlapPoint(mousePos);
             if (other != null)
             {
@@ -38,7 +45,7 @@ public class Player : MonoBehaviour
                 if (deformable != null)
                 {
                     brush.worldRadius = radius;
-                    brush.massStrength = rightClick ? 1f : -1f;
+                    brush.massStrength = leftClick ? -1f : 1f;
                     deformable.Deform(brush, mousePos);
                 }
             }

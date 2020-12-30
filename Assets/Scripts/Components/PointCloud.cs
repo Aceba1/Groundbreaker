@@ -20,7 +20,7 @@ class PointCloud : MonoBehaviour
         meshFilter = GetComponent<MeshFilter>();
     }
 
-    public void Initialize(byte squareCount, float pointScale)
+    public void Initialize(byte squareCount, float pointScale, Material material)
     {
         if (marching != null)
             Debug.LogError("PointCloud.Initialize() : Method has already been called!");
@@ -31,6 +31,8 @@ class PointCloud : MonoBehaviour
         cloud = new byte[size + 1][];
         for (int i = 0; i <= size; i++)
             cloud[i] = new byte[size + 1];
+
+        GetComponent<MeshRenderer>().material = material;
     }
 
     public void MarchMesh()

@@ -4,6 +4,8 @@ using UnityEngine;
 class DeformableCloud : Deformable
 {
     [SerializeField]
+    private Material material;
+    [SerializeField]
     [Range(4, 128)]
     private byte pageDetail = 16;
     [SerializeField]
@@ -30,7 +32,7 @@ class DeformableCloud : Deformable
         obj.transform.localPosition = new Vector3(coord.x * pageSize, coord.y * pageSize);
         
         var cloud = obj.AddComponent<PointCloud>();
-        cloud.Initialize(pageDetail, pointSize);
+        cloud.Initialize(pageDetail, pointSize, material);
         
         clouds.Add(coord, cloud);
         return cloud;
@@ -56,8 +58,6 @@ class DeformableCloud : Deformable
             maxX = Mathf.FloorToInt((localPos.x + bounds.z) / pageSize),
             minY = Mathf.FloorToInt((localPos.y + bounds.y) / pageSize),
             maxY = Mathf.FloorToInt((localPos.y + bounds.w) / pageSize);
-
-        Debug.Log($"{minX}, {minY}, {maxX}, {maxY}");
 
         float pointSize = this.pointSize;
 
