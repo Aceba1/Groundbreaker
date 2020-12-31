@@ -9,15 +9,17 @@ public class Mover : MonoBehaviour
     [SerializeField]
     private float moveSpeed = 4f;
     [SerializeField]
-    private float groundControl = 0.75f;
+    private float groundControl = 0.2f;
     [SerializeField]
-    private float airControl = 0.25f;
+    private float airControl = 0.05f;
+    [SerializeField]
+    private float verticalAirSpeed = 0.1f;
     [SerializeField]
     private float jumpSpeed = 4f;
     [SerializeField]
     private Joystick joystick;
     [SerializeField]
-    private Button jumpButton;
+    private SimpleButton jumpButton;
 
     Rigidbody2D rbody;
     bool grounded;
@@ -26,7 +28,7 @@ public class Mover : MonoBehaviour
 
     private void OnEnable()
     {
-        jumpButton.onClick.AddListener(Jump); // TODO: Must replace with something that activates on press!
+        jumpButton.OnPressEvent += Jump; // TODO: Must replace with something that activates on press!
         rbody = GetComponent<Rigidbody2D>();
     }
     // Start is called before the first frame update
@@ -44,25 +46,28 @@ public class Mover : MonoBehaviour
     void Jump() =>
         jump = true;
 
-    static float ClampSigned(float value, float control)
+    static float ClampVelAxis(float value, float control)
     {
-        Mathf.Sign(value)
+        float vAbs = Mathf.Abs(value);
+        return Mathf.Clamp(value - control, -vAbs, vAbs); // TODO: Finish
     }
 
     private void FixedUpdate()
     {
         // If intending to have moving bodies, will have to implement different system
 
-        Vector2 newVelocity = new Vector2(ClampSigned(joystick.Horizontal * moveSpeed, rbody.velocity.x), 0f);
+        Vector2 newVelocity;
         if (grounded)
         {
-            newVelocity *= groundControl;
-            if (jump)
-                newVelocity += Vector2.up * jumpSpeed;
+            newVelocity = new Vector2(
+                (joystick.Horizontal * moveSpeed - rbody.velocity.x) * groundControl, 
+                jump ? jumpSpeed : 0f);
         }
         else
         {
-            newVelocity *= airControl;
+            newVelocity = new Vector2(
+                ClampVelAxis(joystick.Horizontal * moveSpeed, rbody.velocity.x) * airControl,
+                joystick.Vertical * verticalAirSpeed);
         }
         rbody.velocity += newVelocity;
         jump = false;
