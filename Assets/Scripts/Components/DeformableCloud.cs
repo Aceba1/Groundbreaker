@@ -12,12 +12,9 @@ class DeformableCloud : Deformable
     [Range(1, 32)]
     private int pageSize = 4;
 
-    private float pointSize => pageSize / (float)pageDetail;
+    private float PointSize => pageSize / (float)pageDetail;
 
     Dictionary<Vector2Int, PointCloud> clouds;
-
-    //DEBUG:
-    Vector2[][] trace;
 
     private void OnEnable()
     {
@@ -32,7 +29,7 @@ class DeformableCloud : Deformable
         obj.transform.localPosition = new Vector3(coord.x * pageSize, coord.y * pageSize);
         
         var cloud = obj.AddComponent<PointCloud>();
-        cloud.Initialize(pageDetail, pointSize, material);
+        cloud.Initialize(pageDetail, PointSize, material);
         
         clouds.Add(coord, cloud);
         return cloud;
@@ -59,7 +56,7 @@ class DeformableCloud : Deformable
             minY = Mathf.FloorToInt((localPos.y + bounds.y) / pageSize),
             maxY = Mathf.FloorToInt((localPos.y + bounds.w) / pageSize);
 
-        float pointSize = this.pointSize;
+        float pointSize = this.PointSize;
 
         for (int y = minY; y <= maxY; y++)
             for (int x = minX; x <= maxX; x++)
@@ -73,34 +70,12 @@ class DeformableCloud : Deformable
             }
     }
 
-    private void OnDrawGizmos()
-    {
-        float pointSize = this.pointSize;
-
-        if (trace != null && trace.Length != 0)
-        {
-            for (int i = 0; i < trace.Length; i++)
-            {
-                Gizmos.color = Random.ColorHSV(0, 1, 1, 1, 1, 1, 1, 1);
-                var shape = trace[i];
-                Vector2 last = transform.TransformPoint(shape[shape.Length - 1] * pointSize);
-                for (int j = 0; j < shape.Length; j++)
-                {
-                    Vector2 next = transform.TransformPoint(shape[j] * pointSize);
-                    Gizmos.DrawSphere(next, 0.1f);
-                    Gizmos.DrawLine(last, next);
-                    last = next;
-                }
-            }
-        }
-    }
-
     private void OnDrawGizmosSelected()
     {
         // Ignoring rotations for now
         // Debug only
 
-        float pointSize = this.pointSize;
+        float pointSize = this.PointSize;
 
         Gizmos.color = Color.white;
         for (int i = 0; i <= pageDetail; i++)

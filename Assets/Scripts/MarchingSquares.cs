@@ -93,7 +93,7 @@ class MarchingSquares
         triangles.Clear();
 
         byte[][] cloud = pointCloud.cloud;
-        int size = pointCloud.size;
+        int size = pointCloud.Size;
 
         // <X-Coord, Index>
         Dictionary<int, int> vertexCellIndex = new Dictionary<int, int>();
@@ -325,7 +325,7 @@ class MarchingSquares
 
     #region Tracer
 
-    public Vector2[][] MarchTrace()
+    public IEnumerator<Vector2[][]> MarchTrace()
     {
         if (pointCloud == null)
             throw new NullReferenceException("MarchingSquares.MarchTrace() : pointCloud is undefined");
@@ -337,14 +337,14 @@ class MarchingSquares
         points.Clear();
 
         byte[][] cloud = pointCloud.cloud;
-        int size = pointCloud.size;
+        int size = pointCloud.Size;
 
         //TODO: Cache right, top interpolated points for left, bottom of next
 
         var lastStrip = cloud[0];
-        for (int y = 1; y < size; y++)
+        for (int y = 0; y < size; y++)
         {
-            var nextStrip = cloud[y];
+            var nextStrip = cloud[y + 1];
 
             //TODO: Cache left points
             for (int x = 0; x < size; x++)
@@ -367,7 +367,7 @@ class MarchingSquares
                     #region Corners
 
                     // Up Right Face: Use current, Merge with below
-                    case 0b_0001:
+                    case 0b_0001: yield return GenTrace(total);
 
                         if (y == 0) // On the wall?
                         {
@@ -380,14 +380,17 @@ class MarchingSquares
                         else
                         {
                             var merge = processing[x];
-                            current.AddLast(merge);
+                            if (merge != current)
+                            {
+                                current.AddLast(merge);
+                                total.Remove(merge);
+                            }
                             processing.Remove(x);
-                            total.Remove(merge);
                         }
                         break;
 
                     // Up Left Face: Use below, Add to Last, Set Current
-                    case 0b_0010:
+                    case 0b_0010: yield return GenTrace(total);
 
                         if (x == 0) // On the floor?
                         {
@@ -402,17 +405,17 @@ class MarchingSquares
                         break;
 
                     // Down Left Face: Create new Outline, Open for above, Set Current
-                    case 0b_0100:
+                    case 0b_0100: yield return GenTrace(total);
 
                         current = new Outline();
                         total.Add(current);
                         current.AddFirst(new Vector2(x + 0.5f, y + 1)); // CALCULATE
-                        current.AddLast(new Vector2(x + 1, y + 0.5f)); // CALCULATE
+                        current.AddFirst(new Vector2(x + 1, y + 0.5f)); // CALCULATE
                         processing[x] = current;
                         break;
 
                     // Down Right Face: Use current, Add to First, Open for above
-                    case 0b_1000:
+                    case 0b_1000: yield return GenTrace(total);
 
                         current.AppendFirst(new Vector2(x + 0.5f, y + 1));
                         processing[x] = current;
@@ -423,7 +426,7 @@ class MarchingSquares
                     #region Walls
 
                     // Up Face: Use current, Add to Last
-                    case 0b_1100:
+                    case 0b_0011: yield return GenTrace(total);
 
                         if (x == 0) // On the wall? 
                         {
@@ -435,22 +438,22 @@ class MarchingSquares
                         break;
 
                     // Left Face: Use below, Join to Last, Open for above
-                    case 0b_0110:
+                    case 0b_0110: yield return GenTrace(total);
 
                         if (y == 0) // On the floor?
                         {
-                            current = new Outline();
+                            var temp = new Outline();
                             total.Add(current);
                             current.AddFirst(new Vector2(x + 0.5f, y)); // CALCULATE
-                            processing[x] = current;
+                            temp.AppendLast(new Vector2(x + 0.5f, y + 1)); // CALCULATE
+                            processing[x] = temp;
                         }
                         else
-                            current = processing[x];
-                        current.AppendLast(new Vector2(x + 0.5f, y + 1)); // CALCULATE
+                            processing[x].AppendLast(new Vector2(x + 0.5f, y + 1)); // CALCULATE
                         break;
 
                     // Down Face: Use current, Add to First
-                    case 0b_0011:
+                    case 0b_1100: yield return GenTrace(total);
 
                         if (x == 0) // On the wall?
                         {
@@ -462,7 +465,7 @@ class MarchingSquares
                         break;
 
                     // Right Face: Use below, Add to First, Open for above
-                    case 0b_1001:
+                    case 0b_1001: yield return GenTrace(total);
 
                         if (y == 0) // On the floor?
                         {
@@ -481,37 +484,39 @@ class MarchingSquares
                     #region Valleys 
 
                     // Up Left Face: Use current, Add to Last, Open for above
-                    case 0b_0111:
+                    case 0b_0111: yield return GenTrace(total);
 
                         current.AppendLast(new Vector2(x + 0.5f, y + 1)); // CALCULATE
                         processing[x] = current;
                         break;
 
                     // Up Right Face: Create new Outline, Open for above, Set Current
-                    case 0b_1011:
+                    case 0b_1011: yield return GenTrace(total);
 
                         current = new Outline();
                         total.Add(current);
                         current.AddFirst(new Vector2(x + 0.5f, y + 1)); // CALCULATE
-                        current.AddFirst(new Vector2(x + 1, y + 0.5f)); // CALCULATE
+                        current.AddLast(new Vector2(x + 1, y + 0.5f)); // CALCULATE
                         processing[x] = current;
                         break;
 
                     // Down Right Face: Use below, Add to First, Set Current
-                    case 0b_1101:
-
+                    case 0b_1101: yield return GenTrace(total);
                         current = processing[x];
-                        current.AppendLast(new Vector2(x + 1, y + 0.5f)); // CALCULATE
+                        current.AppendFirst(new Vector2(x + 1, y + 0.5f)); // CALCULATE
                         processing.Remove(x);
                         break;
 
                     // Down Left Face: Use current, Merge with below
-                    case 0b_1110:
+                    case 0b_1110: yield return GenTrace(total);
 
                         {
                             var merge = processing[x];
-                            current.AddFirst(merge);
-                            total.Remove(merge);
+                            if (merge != current)
+                            {
+                                merge.AddLast(current);
+                                total.Remove(current);
+                            }
                             processing.Remove(x);
                             break;
                         }
@@ -521,7 +526,7 @@ class MarchingSquares
                     #region Saddles
 
                     // Down Left, Top Right
-                    case 0b_0101:
+                    case 0b_0101: yield return GenTrace(total);
                         if (BL + BR + TL + TR > 30)
                         {
 
@@ -534,7 +539,7 @@ class MarchingSquares
                         break;
 
                     // Down Right, Top Left
-                    case 0b_1010:
+                    case 0b_1010: yield return GenTrace(total);
                         if (BL + BR + TL + TR > 30)
                         {
 
@@ -569,14 +574,8 @@ class MarchingSquares
             }
             lastStrip = nextStrip;
         }
-
-        Vector2[][] output = new Vector2[total.Count][];
-
-        int i = 0;
-        foreach (var shape in total)
-            output[i++] = shape.ToArray();
-
         
+
 
         //mesh.SetVertices(vertices);
         //mesh.SetSubMesh(0, new SubMeshDescriptor(0, vertices.Count, MeshTopology.LineStrip));
@@ -584,6 +583,16 @@ class MarchingSquares
         //mesh.subMeshCount = total.Count;
         //mesh.SetSubMeshes(descriptors);
 
+        yield return GenTrace(total);
+    }
+
+    Vector2[][] GenTrace(HashSet<Outline> total)
+    {
+        Vector2[][] output = new Vector2[total.Count][];
+
+        int i = 0;
+        foreach (var shape in total)
+            output[i++] = shape.ToArray();
         return output;
     }
     

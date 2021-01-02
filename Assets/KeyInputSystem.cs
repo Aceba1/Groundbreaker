@@ -5,7 +5,14 @@ using UnityEngine;
 public class KeyInputSystem : InputSystem
 {
     [SerializeField]
-    public KeyCode upKey, downKey, leftKey, rightKey, jumpKey, grabKey, pauseKey;
+    public KeyCode 
+        upKey = KeyCode.W, 
+        downKey = KeyCode.S, 
+        leftKey = KeyCode.A, 
+        rightKey = KeyCode.D, 
+        jumpKey = KeyCode.Space, 
+        grabKey = KeyCode.LeftShift, 
+        pauseKey = KeyCode.Escape;
 
     private void LateUpdate() // Should this be Update or LateUpdate?
     {

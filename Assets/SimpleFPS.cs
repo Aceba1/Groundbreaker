@@ -20,10 +20,10 @@ public class SimpleFPS : MonoBehaviour
     }
 
     // Update is called once per frame
-    void Update()
+    void LateUpdate()
     {
         float fps = 1f/Time.unscaledDeltaTime;
-        text.text = $"FPS: {fps}";
+        text.text = $"FPS: {(int)fps}";
         text.color = fpsGradient.Evaluate(fps/60f);
     }
 }
