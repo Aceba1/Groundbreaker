@@ -7,6 +7,9 @@ using UnityEngine.UI;
 public class Mover : MonoBehaviour
 {
     [SerializeField]
+    private InputSystem inputSystem;
+
+    [SerializeField]
     private float moveSpeed = 4f;
     [SerializeField]
     private float groundControl = 0.2f;
@@ -16,35 +19,22 @@ public class Mover : MonoBehaviour
     private float verticalAirSpeed = 0.1f;
     [SerializeField]
     private float jumpSpeed = 4f;
-    [SerializeField]
-    private Joystick joystick;
-    [SerializeField]
-    private SimpleButton jumpButton;
 
     Rigidbody2D rbody;
+
     bool grounded;
     Collider2D ground;
-    bool jump;
 
     private void OnEnable()
     {
-        jumpButton.OnPressEvent += Jump; // TODO: Must replace with something that activates on press!
         rbody = GetComponent<Rigidbody2D>();
-    }
-    // Start is called before the first frame update
-    void Start()
-    {
-        
     }
 
     // Update is called once per frame
     void Update()
     {
-        jump |= Input.GetButtonDown("Jump");
+        
     }
-
-    void Jump() =>
-        jump = true;
 
     static float ClampVelAxis(float value, float control)
     {
@@ -60,17 +50,16 @@ public class Mover : MonoBehaviour
         if (grounded)
         {
             newVelocity = new Vector2(
-                (joystick.Horizontal * moveSpeed - rbody.velocity.x) * groundControl, 
-                jump ? jumpSpeed : 0f);
+                (inputSystem.Move.x * moveSpeed - rbody.velocity.x) * groundControl,
+                inputSystem.Jump ? jumpSpeed : 0f);
         }
         else
         {
             newVelocity = new Vector2(
-                ClampVelAxis(joystick.Horizontal * moveSpeed, rbody.velocity.x) * airControl,
-                joystick.Vertical * verticalAirSpeed);
+                ClampVelAxis(inputSystem.Move.x * moveSpeed, rbody.velocity.x) * airControl,
+                inputSystem.Move.y * verticalAirSpeed);
         }
         rbody.velocity += newVelocity;
-        jump = false;
         grounded = false;
     }
 

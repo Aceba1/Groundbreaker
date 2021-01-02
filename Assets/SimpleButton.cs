@@ -4,15 +4,10 @@ using UnityEngine.UI;
 using UnityEngine.EventSystems;
 
 [DisallowMultipleComponent]
-public class SimpleButton : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
+public class SimpleButton : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IPointerClickHandler
 {
     [SerializeField]
     private Sprite imageSwap;
-
-    [Space]
-    [SerializeField]
-    [Tooltip("Debugging only. Desktop should have its own input system!")]
-    private KeyCode keyboardTrigger = KeyCode.None;
 
     private Sprite imageOrig;
     private Image image;
@@ -25,12 +20,15 @@ public class SimpleButton : MonoBehaviour, IPointerDownHandler, IPointerUpHandle
 
     public event Action OnPressEvent;
     public event Action OnReleaseEvent;
+    public event Action OnClickEvent;
+    public event Action<bool> OnChangeEvent;
 
     public void OnPointerDown(PointerEventData eventData)
     {
         if (imageSwap != null)
             image.sprite = imageSwap;
         OnPressEvent?.Invoke();
+        OnChangeEvent?.Invoke(true);
     }
 
     public void OnPointerUp(PointerEventData eventData)
@@ -38,5 +36,11 @@ public class SimpleButton : MonoBehaviour, IPointerDownHandler, IPointerUpHandle
         if (imageSwap != null)
             image.sprite = imageOrig;
         OnReleaseEvent?.Invoke();
+        OnChangeEvent?.Invoke(false);
+    }
+
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        OnClickEvent?.Invoke();
     }
 }
