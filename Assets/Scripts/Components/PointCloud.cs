@@ -59,7 +59,20 @@ class PointCloud : MonoBehaviour
         if (marchTrace != null && !Input.GetKey(KeyCode.LeftControl))
         {
             trace = marchTrace.Current;
-            if (!marchTrace.MoveNext()) marchTrace = null;
+            if (!marchTrace.MoveNext())
+            {
+                marchTrace = null;
+
+                SetCollider();
+            }
+        }
+    }
+
+    private void SetCollider()
+    {
+        for (int i = 0; i < trace.Length; i++)
+        {
+            polyCollider.SetPath(i, trace[i]);
         }
     }
 
