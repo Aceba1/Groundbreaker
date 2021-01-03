@@ -22,11 +22,14 @@ class PointCloud : MonoBehaviour
     public void OnEnable()
     {
         polyCollider = GetComponent<PolygonCollider2D>();
+        polyCollider.pathCount = 0;
         meshFilter = GetComponent<MeshFilter>();
     }
 
-    public void Initialize(byte squareCount, float pointScale, Material material)
+    public void Initialize(Vector2 offset, byte squareCount, float pointScale, Material material)
     {
+        polyCollider.offset = offset;
+
         if (marching != null)
             Debug.LogError("PointCloud.Initialize() : Method has already been called!");
 
@@ -43,37 +46,23 @@ class PointCloud : MonoBehaviour
 
     public void MarchMesh()
     {
+        //if (meshFilter.mesh == null)
+        //    meshFilter.mesh = marching.MarchMesh();
+        //else
+        //    marching.MarchMesh(meshFilter.mesh);
 
-        if (meshFilter.mesh == null)
-            meshFilter.mesh = marching.MarchMesh();
-        else
-            marching.MarchMesh(meshFilter.mesh);
-
-        marchTrace = marching.MarchTrace();
-    }
-
-    IEnumerator<Vector2[][]> marchTrace;
-
-    private void Update()
-    {
-        if (marchTrace != null && !Input.GetKey(KeyCode.LeftControl))
-        {
-            trace = marchTrace.Current;
-            if (!marchTrace.MoveNext())
-            {
-                marchTrace = null;
-
-                SetCollider();
-            }
-        }
+        trace = marching.MarchTrace();
+        SetCollider();
     }
 
     private void SetCollider()
     {
+        polyCollider.pathCount = trace.Length;
         for (int i = 0; i < trace.Length; i++)
-        {
             polyCollider.SetPath(i, trace[i]);
-        }
+
+        Destroy(meshFilter.mesh);
+        meshFilter.mesh = polyCollider.CreateMesh(false, false);
     }
 
     //? These should be inlined by compiler
@@ -109,11 +98,11 @@ class PointCloud : MonoBehaviour
             for (int i = 0; i < trace.Length; i++)
             {
                 var shape = trace[i];
-                Vector2 last = transform.TransformPoint(shape[0] * pointSize);
+                Vector2 last = transform.TransformPoint(shape[0]);
                 Gizmos.color = Color.white;
                 for (int j = 0; j < shape.Length - 1; j++)
                 {
-                    Vector2 next = transform.TransformPoint(shape[j + 1] * pointSize);
+                    Vector2 next = transform.TransformPoint(shape[j + 1]);
                     Gizmos.DrawSphere(last, 0.05f + (Mathf.Repeat(j, 20) * 0.002f));
                     Gizmos.DrawLine(last, next);
                     Gizmos.color = Color.HSVToRGB(Mathf.Repeat(shape.Length / 10f + j * 0.05f, 1f), 1, 1);

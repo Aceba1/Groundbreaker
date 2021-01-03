@@ -6,8 +6,11 @@ using UnityEngine;
 internal class MarchingSquares
 {
     public const int THRESHOLD = 7;
-    private const int TPROC_LEFT = -1;
-    private const int TPROC_RIGHT = -2;
+    private const int 
+        TPROC_LEFT = -1,
+        TPROC_RIGHT = -2,
+        TPROC_DOWN = -3,
+        TPROC_UP = -4;
     private PointCloud pointCloud;
     private float scale;
     private readonly List<Vector3> points;
@@ -334,7 +337,7 @@ internal class MarchingSquares
     private Dictionary<int, Outline> tracerProc;
     private Outline tracerCurr;
 
-    public IEnumerator<Vector2[][]> MarchTrace()
+    public Vector2[][] MarchTrace()
     {
         if (pointCloud == null)
             throw new NullReferenceException("MarchingSquares.MarchTrace() : pointCloud is undefined");
@@ -380,28 +383,25 @@ internal class MarchingSquares
                     case 0b_0001:
 
                         TraceCornerUR(x, y, size, square);
-                        yield return GenTrace();
                         break;
 
                     // Up Left Face: Use below, Add to Last, Set Current
                     case 0b_0010:
 
                         TraceCornerUL(x, y, size, square);
-                        yield return GenTrace(); 
                         break;
 
                     // Down Left Face: Create new Outline, Open for above, Set Current
                     case 0b_0100:
 
                         TraceCornerDL(x, y, size, square);
-                        yield return GenTrace(); 
                         break;
 
                     // Down Right Face: Use current, Add to First, Open for above
                     case 0b_1000:
 
-                        TraceCornerDR(x, y, size, square);
                         yield return GenTrace(); 
+                        TraceCornerDR(x, y, size, square);                        
                         break;
 
                     #endregion Corners
@@ -412,28 +412,24 @@ internal class MarchingSquares
                     case 0b_0011:
 
                         TraceWallU(x, y, size, square);
-                        yield return GenTrace(); 
                         break;
 
                     // Left Face: Use below, Join to Last, Open for above
                     case 0b_0110:
 
                         TraceWallL(x, y, size, square);
-                        yield return GenTrace(); 
                         break;
 
                     // Down Face: Use current, Add to First
                     case 0b_1100:
 
                         TraceWallD(x, y, size, square);
-                        yield return GenTrace(); 
                         break;
 
                     // Right Face: Use below, Add to First, Open for above
                     case 0b_1001:
 
                         TraceWallR(x, y, size, square);
-                        yield return GenTrace(); 
                         break;
 
                     #endregion Walls
@@ -444,26 +440,22 @@ internal class MarchingSquares
                     case 0b_0111:
 
                         TraceValleyUL(x, y, size, square);
-                        yield return GenTrace(); 
                         break;
 
                     // Up Right Face: Create new Outline, Open for above, Set Current
                     case 0b_1011:
 
                         TraceValleyUR(x, y, size, square);
-                        yield return GenTrace(); 
                         break;
 
                     // Down Right Face: Use below, Add to First, Set Current
                     case 0b_1101:
                         TraceValleyDR(x, y, size, square);
-                        yield return GenTrace();
                         break;
 
                     // Down Left Face: Use current, Merge with below
                     case 0b_1110:
                         TraceValleyDL(x, y, size, square);
-                        yield return GenTrace();
                         break;
 
                     #endregion Valleys
@@ -478,7 +470,6 @@ internal class MarchingSquares
                         else
                         {
                         }
-                        yield return GenTrace();
                         break;
 
                     // Down Right, Top Left
@@ -490,7 +481,6 @@ internal class MarchingSquares
                         else
                         {
                         }
-                        yield return GenTrace();
                         break;
 
                     #endregion Saddles
@@ -498,7 +488,6 @@ internal class MarchingSquares
                     // Full
                     case 0b_1111:
                         TraceFilled(x, y, size);
-                        yield return GenTrace();
                         break;
                 }
 
@@ -529,7 +518,7 @@ internal class MarchingSquares
         tracerProc.Clear();
         tracerCurr = null;
 
-        yield return result;
+        return result;
     }
 
     private Outline TraceNewOutline()
@@ -679,8 +668,7 @@ internal class MarchingSquares
     {
         if (x == 0) // On the wall?
         {
-            tracerCurr = new Outline();
-            tracerTotal.Add(tracerCurr);
+            tracerProc[TPROC_LEFT] = TraceNewOutline();
             tracerCurr.AddFirst(new Vector2(x, y + square.Intn_L));
         }
         else if (x == size - 1) // On the other wall?
@@ -713,9 +701,13 @@ internal class MarchingSquares
     {
         if (x == 0) // On the wall?
         {
-            tracerCurr = new Outline();
-            tracerTotal.Add(tracerCurr);
-            tracerCurr.AddFirst(new Vector2(x, y + square.Intp_L));
+            if (!tracerProc.TryGetValue(TPROC_LEFT, out tracerCurr))
+                TraceNewOutline();
+            tracerCurr.AddLast(new Vector2(x, y + square.Intp_L));
+        }
+        if (x == size - 1)
+        {
+
         }
         tracerCurr.AppendLast(new Vector2(x + 1, y + square.Intp_R));
     }
@@ -765,7 +757,19 @@ internal class MarchingSquares
 
         int i = 0;
         foreach (var shape in tracerTotal)
-            output[i++] = shape.ToArray();
+        {
+            Vector2[] path = new Vector2[shape.Count];
+
+            int ii = 0;
+            var node = shape.First;
+            while (node != null)
+            {
+                path[ii++] = node.Value * scale;
+                node = node.Next;
+            }
+
+            output[i++] = path;
+        }
         return output;
     }
 

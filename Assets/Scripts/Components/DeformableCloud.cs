@@ -26,10 +26,10 @@ class DeformableCloud : Deformable
     {
         var obj = new GameObject("Page " + coord);
         obj.transform.SetParent(transform);
-        obj.transform.localPosition = new Vector3(coord.x * pageSize, coord.y * pageSize);
+        obj.transform.localPosition = Vector3.zero;// = new Vector3(coord.x * pageSize, coord.y * pageSize);
         
         var cloud = obj.AddComponent<PointCloud>();
-        cloud.Initialize(pageDetail, PointSize, material);
+        cloud.Initialize(coord * pageSize, pageDetail, PointSize, material);
         
         clouds.Add(coord, cloud);
         return cloud;
