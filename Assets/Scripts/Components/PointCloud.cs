@@ -89,7 +89,7 @@ class PointCloud : MonoBehaviour
         yield break;
     }
 
-    private void OnDrawGizmos()
+    private void OnDrawGizmosSelected()
     {
         if (trace != null && trace.Length != 0)
         {
@@ -101,11 +101,13 @@ class PointCloud : MonoBehaviour
                 for (int j = 0; j < shape.Length - 1; j++)
                 {
                     Vector2 next = transform.TransformPoint(shape[j + 1] * pointSize);
-                    Gizmos.DrawSphere(last, 0.05f + (Mathf.Repeat(j, 20) * 0.005f));
+                    Gizmos.DrawSphere(last, 0.05f + (Mathf.Repeat(j, 20) * 0.002f));
                     Gizmos.DrawLine(last, next);
                     Gizmos.color = Color.HSVToRGB(Mathf.Repeat(shape.Length / 10f + j * 0.05f, 1f), 1, 1);
                     last = next;
                 }
+                Gizmos.color = Color.black;
+                Gizmos.DrawSphere(last, 0.05f + 0.005f);
             }
         }
     }

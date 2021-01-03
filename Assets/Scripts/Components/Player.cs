@@ -24,7 +24,7 @@ public class Player : MonoBehaviour
         //if (Input.GetKey(KeyCode.LeftShift))
         // Cycle brush types
         //else
-        radius = Mathf.Round(radius * 10f + Input.mouseScrollDelta.y) * 0.1f;
+        radius = Mathf.Max(Mathf.Round(radius * 10f + Input.mouseScrollDelta.y) * 0.1f, 0.1f);
 
 
 
