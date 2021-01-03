@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
-class DeformableCloud : Deformable
+public class DeformableCloud : Deformable
 {
     [SerializeField]
     private Material material;

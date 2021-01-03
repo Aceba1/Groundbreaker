@@ -7,14 +7,12 @@ using UnityEditor;
 public class Player : MonoBehaviour
 {
     Mover mover;
-    InputController input;
 
     SquareBrush brush = new SquareBrush(1f);
 
     void OnEnable ()
     {
         mover = GetComponent<Mover>();
-        input = GetComponent<InputController>();
     }
 
     // Update is called once per frame
@@ -38,17 +36,9 @@ public class Player : MonoBehaviour
             else
                 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
 
-            Collider2D other = Physics2D.OverlapPoint(mousePos);
-            if (other != null)
-            {
-                Deformable deformable = other.GetComponent<Deformable>();
-                if (deformable != null)
-                {
-                    brush.worldRadius = radius;
-                    brush.massStrength = leftClick ? -1f : 1f;
-                    deformable.Deform(brush, mousePos);
-                }
-            }
+            brush.worldRadius = radius;
+            brush.massStrength = leftClick ? -1f : 1f;
+            Core.DeformWorld.Deform(brush, mousePos);
         }
     }
 

@@ -6,8 +6,8 @@ using UnityEngine.UI;
 [RequireComponent(typeof(Rigidbody2D))]
 public class Mover : MonoBehaviour
 {
-    [SerializeField]
-    private InputSystem inputSystem;
+    //[SerializeField]
+    private InputSystem inputSystem => Core.InputSystem;
 
     [SerializeField]
     private float moveSpeed = 4f;
