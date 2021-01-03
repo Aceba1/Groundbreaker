@@ -399,8 +399,7 @@ internal class MarchingSquares
 
                     // Down Right Face: Use current, Add to First, Open for above
                     case 0b_1000:
-
-                        yield return GenTrace(); 
+                        
                         TraceCornerDR(x, y, size, square);                        
                         break;
 
