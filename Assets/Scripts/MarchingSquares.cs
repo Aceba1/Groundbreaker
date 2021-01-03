@@ -6,11 +6,9 @@ using UnityEngine;
 internal class MarchingSquares
 {
     public const int THRESHOLD = 7;
-    private const int 
-        TPROC_LEFT = -1,
-        TPROC_RIGHT = -2,
-        TPROC_DOWN = -3,
-        TPROC_UP = -4;
+
+    private static readonly Square TR_SQU_ZERO = new Square(0,0,0,0);
+
     private PointCloud pointCloud;
     private float scale;
     private readonly List<Vector3> points;
@@ -350,14 +348,26 @@ internal class MarchingSquares
         byte[][] cloud = pointCloud.cloud;
         int size = pointCloud.Size;
 
-        //TODO: Cache right, top interpolated points for left, bottom of next
-
         var lastStrip = cloud[0];
+
+        // Low-end boundary
+        //   Left Corner
+        TraceStep(-1, -1, MapCase(0, 0, 0, PointCloud.GetMass(lastStrip[0])), TR_SQU_ZERO);
+        //   Center
+        for (int xMin = 0; xMin < size; xMin++)
+            TraceStep(xMin, -1, new Square(0, 0, lastStrip[xMin], lastStrip[xMin + 1]));
+        //   Right corner
+        TraceStep(size, -1, MapCase(0, 0, PointCloud.GetMass(lastStrip[size]), 0), TR_SQU_ZERO);
+
+        // Point cloud space
         for (int y = 0; y < size; y++)
         {
             var nextStrip = cloud[y + 1];
 
-            //TODO: Cache left points
+            // Left boundary
+            TraceStep(-1, y, new Square(0, lastStrip[0], 0, nextStrip[0]));
+
+            // Center
             for (int x = 0; x < size; x++)
             {
                 Square square = new Square(
@@ -366,151 +376,30 @@ internal class MarchingSquares
                     nextStrip[x],
                     nextStrip[x + 1]);
 
-                switch (square.MapCase)
+                try
                 {
-                    // For easier visualization, imagine bending the bit line to a U shape
-                    // 0b_8-4-2-1
-                    // 8-4-\
-                    // 1-2-/
-
-                    // Empty
-                    default:
-                    case 0: break;
-
-                    #region Corners
-
-                    // Up Right Face: Use current, Merge with below
-                    case 0b_0001:
-
-                        TraceCornerUR(x, y, size, square);
-                        break;
-
-                    // Up Left Face: Use below, Add to Last, Set Current
-                    case 0b_0010:
-
-                        TraceCornerUL(x, y, size, square);
-                        break;
-
-                    // Down Left Face: Create new Outline, Open for above, Set Current
-                    case 0b_0100:
-
-                        TraceCornerDL(x, y, size, square);
-                        break;
-
-                    // Down Right Face: Use current, Add to First, Open for above
-                    case 0b_1000:
-                        
-                        TraceCornerDR(x, y, size, square);                        
-                        break;
-
-                    #endregion Corners
-
-                    #region Walls
-
-                    // Up Face: Use current, Add to Last
-                    case 0b_0011:
-
-                        TraceWallU(x, y, size, square);
-                        break;
-
-                    // Left Face: Use below, Join to Last, Open for above
-                    case 0b_0110:
-
-                        TraceWallL(x, y, size, square);
-                        break;
-
-                    // Down Face: Use current, Add to First
-                    case 0b_1100:
-
-                        TraceWallD(x, y, size, square);
-                        break;
-
-                    // Right Face: Use below, Add to First, Open for above
-                    case 0b_1001:
-
-                        TraceWallR(x, y, size, square);
-                        break;
-
-                    #endregion Walls
-
-                    #region Valleys
-
-                    // Up Left Face: Use current, Add to Last, Open for above
-                    case 0b_0111:
-
-                        TraceValleyUL(x, y, size, square);
-                        break;
-
-                    // Up Right Face: Create new Outline, Open for above, Set Current
-                    case 0b_1011:
-
-                        TraceValleyUR(x, y, size, square);
-                        break;
-
-                    // Down Right Face: Use below, Add to First, Set Current
-                    case 0b_1101:
-                        TraceValleyDR(x, y, size, square);
-                        break;
-
-                    // Down Left Face: Use current, Merge with below
-                    case 0b_1110:
-                        TraceValleyDL(x, y, size, square);
-                        break;
-
-                    #endregion Valleys
-
-                    #region Saddles
-
-                    // Down Left, Top Right
-                    case 0b_0101:
-                        if (square.TotalMass > 30)
-                        {
-                        }
-                        else
-                        {
-                        }
-                        break;
-
-                    // Down Right, Top Left
-                    case 0b_1010:
-                        ;
-                        if (square.TotalMass > 30)
-                        {
-                        }
-                        else
-                        {
-                        }
-                        break;
-
-                    #endregion Saddles
-
-                    // Full
-                    case 0b_1111:
-                        TraceFilled(x, y, size);
-                        break;
+                    TraceStep(x, y, square);
                 }
-
-                // -- FILLED SPACE --
-
-                //if (x == 0)
-                //{
-                //    if (y == 0)
-                //    {
-                //        current = new Outline();
-                //        current.AddLast(Vector2.zero); // It is what it is
-                //    }
-                //}
-
-                //GenerateMesh(BL, BR, TL, TR, x, y);
+                catch (Exception E)
+                {
+                    Debug.LogError($"{E.Message}\n- ({x},{y}):{Convert.ToString(square.MapCase, 2)}\n- {String.Join(",", tracerProc.Keys)}");
+                }
             }
+
+            // Right boundary
+            TraceStep(size, y, new Square(lastStrip[size], 0, nextStrip[size], 0));
+
             lastStrip = nextStrip;
         }
 
-        //mesh.SetVertices(vertices);
-        //mesh.SetSubMesh(0, new SubMeshDescriptor(0, vertices.Count, MeshTopology.LineStrip));
-
-        //mesh.subMeshCount = total.Count;
-        //mesh.SetSubMeshes(descriptors);
+        // High-end boundary
+        //   Left Corner
+        TraceStep(-1, size, MapCase(0, PointCloud.GetMass(lastStrip[0]), 0, 0), TR_SQU_ZERO);
+        //   Center
+        for (int xMax = 0; xMax < size; xMax++)
+            TraceStep(xMax, size, new Square(lastStrip[xMax], lastStrip[xMax + 1], 0, 0));
+        //   Right corner
+        TraceStep(size, size, MapCase(PointCloud.GetMass(lastStrip[size]), 0, 0, 0), TR_SQU_ZERO);
 
         var result = GenTrace();
         tracerTotal.Clear();
@@ -518,6 +407,96 @@ internal class MarchingSquares
         tracerCurr = null;
 
         return result;
+    }
+
+    private void TraceStep(int x, int y, Square square) => TraceStep(x, y, square.MapCase, square);
+
+    private void TraceStep(int x, int y, int mapCase, Square square)
+    {
+        switch (mapCase)
+        {
+            // For easier visualization, imagine bending the bit line to a U shape
+            // 0b_8-4-2-1
+            // 8-4-\
+            // 1-2-/
+
+            default: // Full or Empty
+                break;
+
+            // Up Right Face: Use current, Merge with below
+            case 0b_0001: TraceCornerUR(x); break;
+
+            // Up Left Face: Use below, Add to Last, Set Current
+            case 0b_0010: TraceCornerUL(x, y, square); break;
+
+            // Down Left Face: Create new Outline, Open for above, Set Current
+            case 0b_0100: TraceCornerDL(x, y, square); break;
+
+            // Down Right Face: Use current, Add to First, Open for above
+            case 0b_1000: TraceCornerDR(x, y, square); break;
+
+            // Up Face: Use current, Add to Last
+            case 0b_0011: TraceWallU(x, y, square); break;
+
+            // Left Face: Use below, Join to Last, Open for above
+            case 0b_0110: TraceWallL(x, y, square); break;
+
+            // Down Face: Use current, Add to First
+            case 0b_1100: TraceWallD(x, y, square); break;
+
+            // Right Face: Use below, Add to First, Open for above
+            case 0b_1001: TraceWallR(x, y, square); break;
+
+            // Up Left Face: Use current, Add to Last, Open for above
+            case 0b_0111: TraceValleyUL(x, y, square); break;
+
+            // Up Right Face: Create new Outline, Open for above, Set Current
+            case 0b_1011: TraceValleyUR(x, y, square); break;
+
+            // Down Right Face: Use below, Add to First, Set Current
+            case 0b_1101: TraceValleyDR(x, y, square); break;
+
+            // Down Left Face: Use current, Merge with below
+            case 0b_1110: TraceValleyDL(x); break;
+
+            // Down Left, Up Right
+            case 0b_0101:
+                if (square.TotalMass > 30) //Todo: Clean this up?
+                {
+                    var leftCurr = tracerCurr;      // Left-coming
+                    TraceValleyDR(x, y, square);    // Consume bottom
+                    var rightCurr = tracerCurr;     // Right-going
+
+                    tracerCurr = leftCurr;          // Restore left
+                    TraceValleyUL(x, y, square);    // Produce top
+                    tracerCurr = rightCurr;         // Restore right
+                }
+                else
+                {
+                    TraceCornerUR(x);               // Consume
+                    TraceCornerDL(x, y, square);    // Produce
+                }
+                break;
+
+            // Down Right, Up Left
+            case 0b_1010:
+                if (square.TotalMass > 30)
+                {
+                    TraceValleyDL(x);               // Consume
+                    TraceValleyUR(x, y, square);    // Produce
+                }
+                else
+                {
+                    var leftCurr = tracerCurr;      // Left-coming
+                    TraceCornerUL(x, y, square);    // Consume bottom
+                    var rightCurr = tracerCurr;     // Right-going
+
+                    tracerCurr = leftCurr;          // Restore left
+                    TraceCornerDR(x, y, square);    // Produce top
+                    tracerCurr = rightCurr;         // Restore right
+                }
+                break;
+        }
     }
 
     private Outline TraceNewOutline()
@@ -539,216 +518,89 @@ internal class MarchingSquares
                 tracerProc[key] = target;
     }
 
-    private void TraceFilled(int x, int y, int size)
-    {
-        if (x == 0)
-        {
-            if (y == 0)
-            {
-                tracerProc[TPROC_LEFT] = TraceNewOutline();
-                tracerCurr.AddLast(Vector2.zero);
-            }
-            else if (y == size - 1)
-            {
-                tracerCurr = tracerProc[TPROC_LEFT];
-                tracerCurr.AppendLast(new Vector2(0, size));
-            }
-        }
-        else if (x == size - 1)
-        {
-            if  (y == 0)
-            {
-                tracerCurr.AppendFirst(new Vector2(size, 0));
-                tracerProc[TPROC_RIGHT] = tracerCurr;
-            }
-            else if (y == size - 1)
-            {
-                tracerCurr.AppendLast(new Vector2(size, size));
-                TraceMergeToEnd(tracerCurr, tracerProc[TPROC_RIGHT]);
-                tracerProc.Remove(TPROC_RIGHT);
-            }
-        }
-    }
+    #region Corners
 
-    private void TraceCornerDR(int x, int y, int size, Square square)
+    private void TraceCornerDR(int x, int y, Square square)
     {
-        if (x == 0) // On the wall?
-        {
-            tracerProc[TPROC_LEFT] = TraceNewOutline();
-            tracerCurr.AddFirst(new Vector2(x, y + square.Intn_R));
-        }
-        if (y == size - 1) // On the roof?
-        {
-
-        }
         tracerCurr.AppendFirst(new Vector2(x + square.Intp_U, y + 1));
         tracerProc[x] = tracerCurr;
     }
 
-    private void TraceCornerDL(int x, int y, int size, Square square)
+    private void TraceCornerDL(int x, int y, Square square)
     {
-        if (y == size - 1) // On the roof?
-        {
-
-        }
-        if (x == size - 1) // On the wall?
-        {
-             
-        }
-        tracerCurr = new Outline();
-        tracerTotal.Add(tracerCurr);
+        tracerProc[x] = TraceNewOutline();
         tracerCurr.AddFirst(new Vector2(x + square.Intn_U, y + 1));
         tracerCurr.AddFirst(new Vector2(x + 1, y + square.Intn_R));
-        tracerProc[x] = tracerCurr;
     }
 
-    private void TraceCornerUL(int x, int y, int size, Square square)
+    private void TraceCornerUL(int x, int y, Square square)
     {
-        if (y == 0) // On the floor?
-        {
-            if (x == 0)
-            tracerCurr = new Outline();
-            tracerTotal.Add(tracerCurr);
-            tracerCurr.AddFirst(new Vector2(x + square.Intn_D, y));
-        }
-        else
-            tracerCurr = tracerProc[x];
+        tracerCurr = tracerProc[x];
         tracerCurr.AppendLast(new Vector2(x + 1, y + square.Intp_R));
         tracerProc.Remove(x);
     }
 
-    private void TraceCornerUR(int x, int y, int size, Square square)
+    private void TraceCornerUR(int x)
     {
-        if (x == 0) // On the wall?
-        {
-            TraceNewOutline()
-                .AddFirst(new Vector2(x + square.Intp_D, y));
-        }
-        if (y == 0) // On the floor?
-            tracerCurr.AppendLast(new Vector2(x + square.Intp_D, y));
-        else
-        {
-            TraceMergeToEnd(tracerCurr, tracerProc[x]);
-            tracerProc.Remove(x);
-        }
+        TraceMergeToEnd(tracerCurr, tracerProc[x]);
+        tracerProc.Remove(x);
     }
 
-    private void TraceWallR(int x, int y, int size, Square square)
+    #endregion Corners
+
+    #region Walls
+
+    private void TraceWallR(int x, int y, Square square)
     {
-        if (y == 0) // On the floor?
-        {
-            if (x == 0) // At the corner?
-            {
-                TraceNewOutline();
-                tracerCurr.AddFirst(Vector2.zero);
-                tracerProc[TPROC_LEFT] = tracerCurr;
-            }
-            tracerCurr.AddFirst(new Vector2(x + square.Intp_D, y));
-            tracerProc[x] = tracerCurr;
-        }
-        else if (y == size - 1) // On the roof?
-        {
-            if (x == 0) // The other corner?
-            {
-                tracerCurr = tracerProc[TPROC_LEFT];
-                tracerCurr.AppendLast(new Vector2(0, size));
-            }
-            tracerCurr.AppendLast(new Vector2(x + square.Intp_U, y + 1));
-            TraceMergeToEnd(tracerCurr, tracerProc[x]);
-            tracerProc.Remove(x);
-        }
-        else
-        {
-            tracerProc[x].AppendFirst(new Vector2(x + square.Intp_U, y + 1));
-        }
+        tracerProc[x].AppendFirst(new Vector2(x + square.Intp_U, y + 1));
     }
 
-    private void TraceWallD(int x, int y, int size, Square square)
+    private void TraceWallD(int x, int y, Square square)
     {
-        if (x == 0) // On the wall?
-        {
-            tracerProc[TPROC_LEFT] = TraceNewOutline();
-            tracerCurr.AddFirst(new Vector2(x, y + square.Intn_L));
-        }
-        else if (x == size - 1) // On the other wall?
-        {
-            tracerProc[TPROC_RIGHT] = tracerCurr;
-        }
         tracerCurr.AppendFirst(new Vector2(x + 1, y + square.Intn_R));
     }
 
-    private void TraceWallL(int x, int y, int size, Square square)
+    private void TraceWallL(int x, int y, Square square)
     {
-        if (y == 0) // On the floor?
-        {
-            TraceNewOutline();
-            tracerCurr.AddFirst(new Vector2(x + square.Intn_D, y));
-            tracerCurr.AppendLast(new Vector2(x + square.Intn_U, y + 1));
-            tracerProc[x] = tracerCurr;
-        }
-        else if (y == size - 1) // On the roof?
-        {
-            tracerCurr.AppendLast(new Vector2(x + square.Intn_U, y + 1));
-            TraceMergeToEnd(tracerCurr, tracerProc[x]);
-            tracerProc.Remove(x);
-        }
-        else
-            tracerProc[x].AppendLast(new Vector2(x + square.Intn_U, y + 1));
+        tracerProc[x].AppendLast(new Vector2(x + square.Intn_U, y + 1));
     }
 
-    private void TraceWallU(int x, int y, int size, Square square)
+    private void TraceWallU(int x, int y, Square square)
     {
-        if (x == 0) // On the wall?
-        {
-            if (!tracerProc.TryGetValue(TPROC_LEFT, out tracerCurr))
-                TraceNewOutline();
-            tracerCurr.AddLast(new Vector2(x, y + square.Intp_L));
-        }
-        if (x == size - 1)
-        {
-
-        }
         tracerCurr.AppendLast(new Vector2(x + 1, y + square.Intp_R));
     }
 
-    private void TraceValleyDL(int x, int y, int size, Square square)
+    #endregion Walls
+
+    #region Valleys
+
+    private void TraceValleyDL(int x)
     {
-        if (x == 0) // On the wall?
-        {
-            tracerProc[-1] = TraceNewOutline();
-            tracerCurr.AddLast(new Vector2(0, y + square.Intn_L));
-        }
         TraceMergeToEnd(tracerProc[x], tracerCurr);
         tracerProc.Remove(x);
     }
 
-    private void TraceValleyDR(int x, int y, int size, Square square)
+    private void TraceValleyDR(int x, int y, Square square)
     {
-        if (y == 0) // On the floor?
-        {
-            // There should be a current present
-        }
-        else
-            tracerCurr = tracerProc[x];
+        tracerCurr = tracerProc[x];
         tracerCurr.AppendFirst(new Vector2(x + 1, y + square.Intn_R));
         tracerProc.Remove(x);
     }
 
-    private void TraceValleyUR(int x, int y, int size, Square square)
+    private void TraceValleyUR(int x, int y, Square square)
     {
-        tracerCurr = new Outline();
-        tracerTotal.Add(tracerCurr);
+        tracerProc[x] = TraceNewOutline();
         tracerCurr.AddFirst(new Vector2(x + square.Intp_U, y + 1));
         tracerCurr.AddLast(new Vector2(x + 1, y + square.Intp_R));
-        tracerProc[x] = tracerCurr;
     }
 
-    private void TraceValleyUL(int x, int y, int size, Square square)
+    private void TraceValleyUL(int x, int y, Square square)
     {
-
         tracerCurr.AppendLast(new Vector2(x + square.Intn_U, y + 1));
         tracerProc[x] = tracerCurr;
     }
+
+    #endregion Valleys
 
     private Vector2[][] GenTrace()
     {
