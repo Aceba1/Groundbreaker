@@ -59,6 +59,11 @@ static class MathUtil
         (C.y - B.y) * (B.x - A.x) ==
         (B.y - A.y) * (C.x - B.x);
 
+    public static Vector2 RotateRight90(Vector2 value) =>
+        new Vector2(value.y, -value.x);
+    public static Vector2 RotateLeft90(Vector2 value) =>
+        new Vector2(-value.y, value.x);
+
     public struct Edge
     {
         public Edge(Vector2 A, Vector2 B)

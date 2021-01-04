@@ -20,20 +20,24 @@ public class Mover : MonoBehaviour
     [SerializeField]
     private float jumpSpeed = 4f;
 
+    [Space]
+    [SerializeField]
+    private float groundNormalThreshold = 0.5f;
+    [SerializeField]
+    private float groundStick = 1f;
+
+    private float gravityScale => Core.GravityScale;
+
     Rigidbody2D rbody;
 
     bool grounded;
     Collider2D ground;
+    Vector2 down;
+    Vector2 forward;
 
     private void OnEnable()
     {
         rbody = GetComponent<Rigidbody2D>();
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
     }
 
     static float ClampVelAxis(float value, float control)
@@ -49,12 +53,16 @@ public class Mover : MonoBehaviour
         Vector2 newVelocity;
         if (grounded)
         {
-            newVelocity = new Vector2(
-                (inputSystem.Move.x * moveSpeed - rbody.velocity.x) * groundControl,
-                inputSystem.Jump ? jumpSpeed : 0f);
+            rbody.gravityScale = 0;
+            newVelocity = forward * ((inputSystem.Move.x * moveSpeed - rbody.velocity.x) * groundControl);
+            if (inputSystem.Jump)
+                newVelocity += new Vector2(0, jumpSpeed);
+            else
+                newVelocity += down * groundStick;
         }
         else
         {
+            rbody.gravityScale = gravityScale;
             newVelocity = new Vector2(
                 ClampVelAxis(inputSystem.Move.x * moveSpeed, rbody.velocity.x) * airControl,
                 inputSystem.Move.y * verticalAirSpeed);
@@ -70,10 +78,20 @@ public class Mover : MonoBehaviour
         {
             ContactPoint2D contact = collision.GetContact(i);
 
-            if (contact.normal.y > 0.7f)
+            if (contact.normal.y > groundNormalThreshold)
             {
-                grounded = true;
-                ground = contact.collider;
+                if (!grounded)
+                {
+                    grounded = true;
+                    ground = contact.collider;
+                    down = -contact.normal;
+                    forward = MathUtil.RotateRight90(contact.normal);
+                }
+                else
+                {
+                    down = Vector2.down;
+                    forward = Vector2.right;
+                }
             }
 
             // Perform other checks here, such as if holding on to a roof?
