@@ -42,16 +42,15 @@ Shader "Unlit/InvertColors"
                 float4 vertex: POSITION;
             };
 
-            struct fragmentInput
+            struct v2f
             {
                 float2 uv : TEXCOORD0;
                 float4 pos : SV_POSITION;
-                float4 color : COLOR0;
             };
 
-            fragmentInput vert(vertexInput i)
+            v2f vert(vertexInput i)
             {
-                fragmentInput o;
+                v2f o;
 
                 o.pos = UnityObjectToClipPos(i.vertex);
                 o.uv = i.uv;
@@ -59,7 +58,7 @@ Shader "Unlit/InvertColors"
                 return o;
             }
 
-            half4 frag(fragmentInput i) : COLOR
+            half4 frag(v2f i) : COLOR
             {
                 half4 texColor = tex2D(_MainTex, i.uv);
 
