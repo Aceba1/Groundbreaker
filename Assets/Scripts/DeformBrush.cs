@@ -1,7 +1,8 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
-abstract class DeformBrush : IPointCloudBrush
+[System.Serializable]
+public abstract class DeformBrush : IPointCloudBrush
 {
     public readonly Shape shape;
     public readonly Effect massEffect;
@@ -132,7 +133,7 @@ class SquareBrush : DeformBrush
 {
     public float worldRadius;
 
-    public SquareBrush(float radius, float mass = 1f, Effect massEffect = Effect.Set) : base(Shape.Circle, mass, massEffect)//, hardEffect)
+    public SquareBrush(float radius, float mass = 1f, Effect massEffect = Effect.Set) : base(Shape.Square, mass, massEffect)//, hardEffect)
     {
         worldRadius = radius;
     }
