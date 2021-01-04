@@ -12,15 +12,24 @@ public class Core : MonoBehaviour
     private Deformable deformWorld;
     public static Deformable DeformWorld { get; private set; }
 
+    [SerializeField]
+    private float gravityScale;
+    public static float GravityScale { get; private set; }
+
     private void OnEnable()
     {
         InputSystem = inputSystem;
         DeformWorld = deformWorld;
+        GravityScale = gravityScale;
         Application.targetFrameRate = 60;
     }
 
-    // Start is called before the first frame update
-    void Start()
+#if UNITY_EDITOR
+    private void Update()
     {
+        InputSystem = inputSystem;
+        DeformWorld = deformWorld;
+        GravityScale = gravityScale;
     }
+#endif
 }
