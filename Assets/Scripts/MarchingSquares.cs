@@ -609,6 +609,8 @@ internal class MarchingSquares
         int i = 0;
         foreach (var shape in tracerTotal)
         {
+            shape.Squish();
+
             Vector2[] path = new Vector2[shape.Count];
 
             int ii = 0;
@@ -626,6 +628,26 @@ internal class MarchingSquares
 
     private class Outline : LinkedList<Vector2>
     {
+        public void Squish()
+        {
+            int count = Count;
+            if (count < 3)
+            {
+                Clear();
+                return;
+            }
+            LinkedListNode<Vector2> iterLast = Last;
+            LinkedListNode<Vector2> iterCurr = First;
+            while (iterCurr != null)
+            {
+                if ((iterLast.Value - iterCurr.Value).sqrMagnitude < 0.1f)
+                    Remove(iterLast);
+
+                iterLast = iterCurr;
+                iterCurr = iterCurr.Next;
+            }
+        }
+
         public void AppendLast(Vector2 point)
         {
             if (Count >= 2 && MathUtil.Collinear(Last.Previous.Value, Last.Value, point))

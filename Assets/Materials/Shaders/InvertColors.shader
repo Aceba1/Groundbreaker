@@ -17,12 +17,7 @@ Shader "Unlit/InvertColors"
             "RenderType" = "Transparent"
             "PreviewType" = "Plane"
         }
-
-        Pass
-        {
-           ZWrite On
-           ColorMask 0
-        }
+        LOD 100
         
         Blend OneMinusDstColor OneMinusSrcAlpha
         BlendOp Add
@@ -33,7 +28,7 @@ Shader "Unlit/InvertColors"
 
             #pragma vertex vert
             #pragma fragment frag
-            uniform float4 _Color ;
+            uniform float4 _Color;
             sampler2D _MainTex;
 
             struct vertexInput

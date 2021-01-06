@@ -5,14 +5,15 @@ using UnityEngine;
 
 public abstract class InputSystem : MonoBehaviour
 {
-    private bool jump;
-    private bool grab;
-    private Vector2 move;
+    protected bool jump;
+    protected bool grab;
+    protected Vector2 move;
 
     public Action<bool> OnJumpEvent;
     public Action<bool> OnGrabEvent;
     public Action<Vector2> OnMoveEvent;
     public Action OnPauseEvent;
+    public Action<InputSystem> OnUpdate;
 
     public virtual bool Jump
     {
@@ -20,8 +21,11 @@ public abstract class InputSystem : MonoBehaviour
         set
         {
             if (jump != value)
+            {
+                jump = value;
+                OnUpdate?.Invoke(this);
                 OnJumpEvent?.Invoke(value);
-            jump = value;
+            }
         }
     }
 
@@ -31,8 +35,11 @@ public abstract class InputSystem : MonoBehaviour
         set
         {
             if (grab != value)
+            {
+                grab = value;
+                OnUpdate?.Invoke(this);
                 OnGrabEvent?.Invoke(value);
-            grab = value;
+            }
         }
     }
 
@@ -42,11 +49,14 @@ public abstract class InputSystem : MonoBehaviour
         set
         {
             if (move != value)
+            {
+                move = value;
+                OnUpdate?.Invoke(this);
                 OnMoveEvent?.Invoke(value);
-            move = value;
+            }
         }
     }
 
-    protected void Pause() =>
+    protected virtual void Pause() =>
         OnPauseEvent?.Invoke();
 }

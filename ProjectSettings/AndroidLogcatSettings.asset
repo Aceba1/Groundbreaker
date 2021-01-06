@@ -1,9 +1,9 @@
 {
-    "m_SelectedDeviceId": "ZL5229VHJD",
+    "m_SelectedDeviceId": "5200f24d423ab5b3",
     "m_SelectedPackage": {
-        "deviceId": "",
-        "name": "",
-        "processId": 0,
+        "deviceId": "5200f24d423ab5b3",
+        "name": "com.DefaultCompany.com.unity.template.mobile2D",
+        "processId": 30727,
         "exited": false
     },
     "m_SelectedPriority": 0,
@@ -36,6 +36,12 @@
             "deviceId": "5200f24d423ab5b3",
             "name": "com.DefaultCompany.com.unity.template.mobile2D",
             "processId": 31070,
+            "exited": false
+        },
+        {
+            "deviceId": "5200f24d423ab5b3",
+            "name": "com.DefaultCompany.com.unity.template.mobile2D",
+            "processId": 30727,
             "exited": false
         },
         {

@@ -12,6 +12,17 @@ public class TouchInputSystem : InputSystem
     private void SetJump(bool value) => Jump = value;
     private void SetGrab(bool value) => Grab = value;
 
+    private void Awake()
+    {
+
+        if (Application.isMobilePlatform) return;
+#if !UNITY_EDITOR
+        gameObject.SetActive(false);
+        enabled = false;
+        return;
+#endif
+    }
+
     private void OnEnable()
     {
         jumpInput.OnChangeEvent += SetJump;
@@ -21,9 +32,12 @@ public class TouchInputSystem : InputSystem
 
     private void OnDisable()
     {
-        jumpInput.OnChangeEvent -= SetJump;
-        grabInput.OnChangeEvent -= SetGrab;
-        pauseButton.OnClickEvent -= Pause;
+        if (jumpInput)
+        {
+            jumpInput.OnChangeEvent -= SetJump;
+            grabInput.OnChangeEvent -= SetGrab;
+            pauseButton.OnClickEvent -= Pause;
+        }
     }
 
     private void LateUpdate() // Should this be Update or LateUpdate?
