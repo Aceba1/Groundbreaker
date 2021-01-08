@@ -1,6 +1,8 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 //TODO: Move to Player gameobject
 [RequireComponent(typeof(InputMapper))]
@@ -42,10 +44,10 @@ public class Core : MonoBehaviour
     {
         foreach (InputSystem system in inputSystems)
             inputMapper.RemoveFromWatch(system);
-    }
 
-    void SwitchInput()
-    {
+#if UNITY_EDITOR
+        ReloadScene_DEBUG();
+#endif
     }
 
 #if UNITY_EDITOR
@@ -55,4 +57,9 @@ public class Core : MonoBehaviour
         GravityScale = gravityScale;
     }
 #endif
+
+    internal static void ReloadScene_DEBUG()
+    {
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+    }
 }

@@ -640,14 +640,14 @@ internal class MarchingSquares
             LinkedListNode<Vector2> iterCurr = First;
             while (iterCurr != null)
             {
-                if ((iterLast.Value - iterCurr.Value).sqrMagnitude < 0.1f)
+                if ((iterLast.Value - iterCurr.Value).sqrMagnitude < 0.0025f)
                     Remove(iterLast);
 
                 iterLast = iterCurr;
                 iterCurr = iterCurr.Next;
             }
         }
-
+        
         public void AppendLast(Vector2 point)
         {
             if (Count >= 2 && MathUtil.Collinear(Last.Previous.Value, Last.Value, point))

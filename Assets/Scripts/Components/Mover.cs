@@ -1,9 +1,5 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
+
 using UnityEngine;
-using UnityEngine.SceneManagement;
-using UnityEngine.UI;
 
 [RequireComponent(typeof(Rigidbody2D))]
 public class Mover : MonoBehaviour
@@ -38,6 +34,7 @@ public class Mover : MonoBehaviour
 
     float airTime = 0f;
     bool jumping = false;
+    bool jumped = false;
     bool grounded;
     Collider2D ground;
     Vector2 down;
@@ -52,7 +49,7 @@ public class Mover : MonoBehaviour
 
     private void Pause()
     {
-        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        Core.ReloadScene_DEBUG();
     }
 
     private void OnDisable()
@@ -61,10 +58,7 @@ public class Mover : MonoBehaviour
         inputSystem.OnPauseEvent -= Pause;
     }
 
-    private void TryJump(bool obj)
-    {
-        jumping = obj;
-    }
+    private void TryJump(bool obj) => jumping = obj;
 
     static float ClampVelAxis(float value, float control)
     {
@@ -72,22 +66,28 @@ public class Mover : MonoBehaviour
         return Mathf.Clamp(value - control, -vAbs, vAbs); // TODO: Finish
     }
 
+    void Update()
+    {
+        jumped = false;
+    }
+
     private void FixedUpdate()
     {
         // If intending to have moving bodies, will have to implement different system
-
-        airTime += Time.fixedDeltaTime;
 
         Vector2 newVelocity = rbody.velocity;
 
         if (jumping && airTime < jumpInAirTime)
         {
             newVelocity += new Vector2(0, jumpSpeed);
-            airTime = jumpInAirTime;
+            airTime = jumpInAirTime; // Stop it
             grounded = false;
             jumping = false;
+            jumped = true;
         }
         else if (ground == null) grounded = false;
+
+        airTime += Time.fixedDeltaTime;
 
         if (grounded)
         {
@@ -113,6 +113,8 @@ public class Mover : MonoBehaviour
 
     private void OnCollisionStay2D(Collision2D collision)
     {
+        if (jumped) return;
+
         int size = collision.contactCount;
         for (int i = 0; i < size; i++)
         {

@@ -6,13 +6,13 @@ using UnityEditor;
 [RequireComponent(typeof(Mover))]
 public class Player : MonoBehaviour
 {
-    Mover mover;
+    //Mover mover;
 
     SquareBrush brush = new SquareBrush(1f);
 
-    void OnEnable ()
+    void OnEnable()
     {
-        mover = GetComponent<Mover>();
+        //mover = GetComponent<Mover>();
     }
 
     // Update is called once per frame
